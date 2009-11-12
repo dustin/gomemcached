@@ -7,14 +7,13 @@ import (
 	"./mc_storage";
 	"log";
 	"net";
-	"os";
 )
 
-func waitForConnections(ls *net.TCPListener) {
+func waitForConnections(ls net.Listener) {
 	reqChannel := make(chan MCRequest);
 	go mc_storage.RunServer(reqChannel);
 	for {
-		s, e := ls.AcceptTCP();
+		s, e := ls.Accept();
 		if e == nil {
 			log.Stdout("Got a connection %s", s);
 			go mc_conn_handler.HandleIO(s, reqChannel);
@@ -25,12 +24,7 @@ func waitForConnections(ls *net.TCPListener) {
 }
 
 func main() {
-	var la *net.TCPAddr;
-	var err os.Error;
-	if la, err = net.ResolveTCPAddr(":11212"); err != nil {
-		log.Exitf("Error resolving address: %s", err)
-	}
-	ls, e := net.ListenTCP("tcp", la);
+	ls, e := net.Listen("tcp", ":11212");
 	if e != nil {
 		log.Exitf("Got an error:  %s", e)
 	}

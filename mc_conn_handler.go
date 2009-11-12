@@ -10,7 +10,7 @@ import (
 	"bufio";
 )
 
-func HandleIO(s *net.TCPConn, reqChannel chan MCRequest) {
+func HandleIO(s net.Conn, reqChannel chan MCRequest) {
 	log.Stdout("Processing input from %s", s);
 	for handleMessage(s, reqChannel) {
 	}
@@ -18,7 +18,7 @@ func HandleIO(s *net.TCPConn, reqChannel chan MCRequest) {
 	log.Stdout("Hung up on a connection");
 }
 
-func handleMessage(s *net.TCPConn, reqChannel chan MCRequest) (ret bool) {
+func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
 	log.Stdoutf("Handling a message...");
 	hdrBytes := make([]byte, HDR_LEN);
 	ret = false;
@@ -54,7 +54,7 @@ func handleMessage(s *net.TCPConn, reqChannel chan MCRequest) (ret bool) {
 	return;
 }
 
-func readContents(s *net.TCPConn, req MCRequest) (rv bool) {
+func readContents(s net.Conn, req MCRequest) (rv bool) {
 	rv = true;
 	if !readOb(s, req.Extras) {
 		return
@@ -70,7 +70,7 @@ func readContents(s *net.TCPConn, req MCRequest) (rv bool) {
 	return;
 }
 
-func transmitResponse(s *net.TCPConn, req MCRequest, res MCResponse) (rv bool) {
+func transmitResponse(s net.Conn, req MCRequest, res MCResponse) (rv bool) {
 	rv = true;
 	o := bufio.NewWriter(s);
 	rv = writeByte(o, RES_MAGIC, rv);
@@ -130,7 +130,7 @@ func writeUint64(s *bufio.Writer, n uint64, ok bool) (rv bool) {
 	return;
 }
 
-func readOb(s *net.TCPConn, buf []byte) (rv bool) {
+func readOb(s net.Conn, buf []byte) (rv bool) {
 	rv = true;
 	x, err := io.ReadFull(s, buf);
 	if err != nil || x != len(buf) {
