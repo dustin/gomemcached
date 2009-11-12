@@ -95,7 +95,7 @@ func (res MCResponse) String() string {
 
 type MCItem struct {
 	Cas	uint64;
-	Flags	uint32;
+	Flags, Expiration	uint32;
 	Data	[]byte;
 }
 
