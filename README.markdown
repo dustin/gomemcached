@@ -7,6 +7,11 @@ useful over time as I play with the language more.
 
 ## Design
 
+<div>
+  <img src="http://dustin.github.com/images/gomemcached.png"
+       alt="overview" style="float: right"/>
+</div>
+
 The basic design can be seen in [gocache].  A [storage
 server][storage] is run as a goroutine that receives a `MCRequest` on
 a channel, and then issues an `MCResponse` to a channel contained
