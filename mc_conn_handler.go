@@ -6,6 +6,7 @@ import (
 	"log";
 	"net";
 	"io";
+	"bufio";
 )
 
 func HandleIO(s *net.TCPConn, reqChannel chan MCRequest) {
@@ -70,25 +71,27 @@ func readContents(s *net.TCPConn, req MCRequest) (rv bool) {
 
 func transmitResponse(s *net.TCPConn, req MCRequest, res MCResponse) (rv bool) {
 	rv = true;
-	rv = writeByte(s, RES_MAGIC, rv);
-	rv = writeByte(s, req.Opcode, rv);
-	rv = writeUint16(s, uint16(len(res.Key)), rv);
-	rv = writeByte(s, uint8(len(res.Extras)), rv);
-	rv = writeByte(s, 0, rv);
-	rv = writeUint16(s, res.Status, rv);
-	rv = writeUint32(s, uint32(len(res.Body))+
+	o := bufio.NewWriter(s);
+	rv = writeByte(o, RES_MAGIC, rv);
+	rv = writeByte(o, req.Opcode, rv);
+	rv = writeUint16(o, uint16(len(res.Key)), rv);
+	rv = writeByte(o, uint8(len(res.Extras)), rv);
+	rv = writeByte(o, 0, rv);
+	rv = writeUint16(o, res.Status, rv);
+	rv = writeUint32(o, uint32(len(res.Body))+
 		uint32(len(res.Key))+
 		uint32(len(res.Extras)),
 		rv);
-	rv = writeUint32(s, req.Opaque, rv);
-	rv = writeUint64(s, res.Cas, rv);
-	rv = writeBytes(s, res.Extras, rv);
-	rv = writeBytes(s, res.Key, rv);
-	rv = writeBytes(s, res.Body, rv);
+	rv = writeUint32(o, req.Opaque, rv);
+	rv = writeUint64(o, res.Cas, rv);
+	rv = writeBytes(o, res.Extras, rv);
+	rv = writeBytes(o, res.Key, rv);
+	rv = writeBytes(o, res.Body, rv);
+	o.Flush();
 	return;
 }
 
-func writeBytes(s *net.TCPConn, data []byte, ok bool) (rv bool) {
+func writeBytes(s *bufio.Writer, data []byte, ok bool) (rv bool) {
 	rv = ok;
 	if ok && len(data) > 0 {
 		written, err := s.Write(data);
@@ -101,14 +104,14 @@ func writeBytes(s *net.TCPConn, data []byte, ok bool) (rv bool) {
 
 }
 
-func writeByte(s *net.TCPConn, b byte, ok bool) (rv bool) {
+func writeByte(s *bufio.Writer, b byte, ok bool) (rv bool) {
 	var data [1]byte;
 	data[0] = b;
 	rv = writeBytes(s, &data, ok);
 	return;
 }
 
-func writeUint16(s *net.TCPConn, n uint16, ok bool) (rv bool) {
+func writeUint16(s *bufio.Writer, n uint16, ok bool) (rv bool) {
 	var data [2]byte;
 	data[0] = uint8(n >> 8);
 	data[1] = uint8(n & 0xff);
@@ -116,7 +119,7 @@ func writeUint16(s *net.TCPConn, n uint16, ok bool) (rv bool) {
 	return;
 }
 
-func writeUint32(s *net.TCPConn, n uint32, ok bool) (rv bool) {
+func writeUint32(s *bufio.Writer, n uint32, ok bool) (rv bool) {
 	var data [4]byte;
 	data[0] = uint8(n >> 24);
 	data[1] = uint8((n >> 16) & 0xff);
@@ -130,7 +133,7 @@ func writeUint32(s *net.TCPConn, n uint32, ok bool) (rv bool) {
 	return;
 }
 
-func writeUint64(s *net.TCPConn, n uint64, ok bool) (rv bool) {
+func writeUint64(s *bufio.Writer, n uint64, ok bool) (rv bool) {
 	rv = writeUint32(s, uint32(n>>32), ok);
 	rv = writeUint32(s, uint32(n&0xffffffff), ok);
 	return;
