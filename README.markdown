@@ -7,9 +7,10 @@ useful over time as I play with the language more.
 
 ## Design
 
-The basic design can be seen in [gocache].  `dataServer` is a
-goroutine that receives a `MCRequest` on a channel, and then issues an
-`MCResponse` to a channel contained within the request.
+The basic design can be seen in [gocache].  A [storage
+server][storage] is run as a goroutine that receives a `MCRequest` on
+a channel, and then issues an `MCResponse` to a channel contained
+within the request.
 
 Each connection is a separate goroutine, of course, and is responsible
 for all IO for that connection until the connection drops or the
@@ -22,3 +23,4 @@ learn the language somewhat.
 
 [go]: http://golang.org/
 [gocache]: gomemcached/blob/master/gocache.go
+[storage]: gomemcached/blob/master/mc_storage.go
