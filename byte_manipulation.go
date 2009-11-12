@@ -18,3 +18,32 @@ func ReadInt64(h []byte, offset int) (rv uint64) {
 	rv |= uint64(ReadInt32(h, offset+4));
 	return;
 }
+
+func WriteUint16(n uint16) (rv []byte) {
+	rv = make([]byte, 2);
+	rv[0] = uint8(n >> 8);
+	rv[1] = uint8(n & 0xff);
+	return;
+}
+
+func WriteUint32(n uint32) (rv []byte) {
+	rv = make([]byte, 4);
+	rv[0] = uint8(n >> 24);
+	rv[1] = uint8((n >> 16) & 0xff);
+	rv[2] = uint8((n >> 8) & 0xff);
+	rv[3] = uint8(n & 0xff);
+	return;
+}
+
+func WriteUint64(n uint64) (rv []byte) {
+	rv = make([]byte, 8);
+	rv[0] = uint8(n >> 56);
+	rv[1] = uint8((n >> 48) & 0xff);
+	rv[2] = uint8((n >> 40) & 0xff);
+	rv[3] = uint8((n >> 32) & 0xff);
+	rv[4] = uint8((n >> 24) & 0xff);
+	rv[5] = uint8((n >> 16) & 0xff);
+	rv[6] = uint8((n >> 8) & 0xff);
+	rv[7] = uint8(n & 0xff);
+	return;
+}

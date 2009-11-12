@@ -113,30 +113,20 @@ func writeByte(s *bufio.Writer, b byte, ok bool) (rv bool) {
 }
 
 func writeUint16(s *bufio.Writer, n uint16, ok bool) (rv bool) {
-	var data [2]byte;
-	data[0] = uint8(n >> 8);
-	data[1] = uint8(n & 0xff);
-	rv = writeBytes(s, &data, ok);
+	data := WriteUint16(n);
+	rv = writeBytes(s, data, ok);
 	return;
 }
 
 func writeUint32(s *bufio.Writer, n uint32, ok bool) (rv bool) {
-	var data [4]byte;
-	data[0] = uint8(n >> 24);
-	data[1] = uint8((n >> 16) & 0xff);
-	data[2] = uint8((n >> 8) & 0xff);
-	data[3] = uint8(n & 0xff);
-	rv = writeBytes(s, &data, ok);
-	/*
-		rv = writeUint16(s, uint16(n>>16), ok);
-		rv = writeUint16(s, uint16(n&0xffff), ok);
-	*/
+	data := WriteUint32(n);
+	rv = writeBytes(s, data, ok);
 	return;
 }
 
 func writeUint64(s *bufio.Writer, n uint64, ok bool) (rv bool) {
-	rv = writeUint32(s, uint32(n>>32), ok);
-	rv = writeUint32(s, uint32(n&0xffffffff), ok);
+	data := WriteUint64(n);
+	rv = writeBytes(s, data, ok);
 	return;
 }
 
