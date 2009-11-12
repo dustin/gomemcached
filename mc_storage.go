@@ -12,6 +12,13 @@ type storage struct {
 	cas	uint64;
 }
 
+type handler func(req MCRequest, s *storage) MCResponse
+
+var handlers = map[uint8]handler{
+	SET: handleSet,
+	GET: handleGet,
+}
+
 func RunServer(input chan MCRequest) {
 	var s storage;
 	s.cas = 0;
@@ -24,13 +31,10 @@ func RunServer(input chan MCRequest) {
 }
 
 func dispatch(req MCRequest, s *storage) (rv MCResponse) {
-	switch req.Opcode {
-	default:
-		rv = notFound(req, s)
-	case SET:
-		rv = handleSet(req, s)
-	case GET:
-		rv = handleGet(req, s)
+	if h, ok := handlers[req.Opcode]; ok {
+		rv = h(req, s)
+	} else {
+		notFound(req, s)
 	}
 	return;
 }
