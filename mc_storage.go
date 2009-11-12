@@ -64,6 +64,7 @@ func handleGet(req MCRequest, s *storage) (ret MCResponse) {
 	if item, ok := s.data[string(req.Key)]; ok {
 		ret.Status = SUCCESS;
 		ret.Extras = WriteUint32(item.Flags);
+		ret.Cas = item.Cas;
 		ret.Body = item.Data;
 	} else {
 		ret.Status = KEY_ENOENT
