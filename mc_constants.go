@@ -93,4 +93,10 @@ func (res MCResponse) String() string {
 		res.Status, len(res.Key), len(res.Extras), len(res.Body))
 }
 
+type MCItem struct {
+	Cas	uint64;
+	Flags	uint32;
+	Data	[]byte;
+}
+
 const HDR_LEN = 24
