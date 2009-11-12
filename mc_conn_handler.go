@@ -33,15 +33,7 @@ func handleMessage(s *net.TCPConn, reqChannel chan MCRequest) (ret bool) {
 		return
 	}
 
-	if !readOb(s, req.Extras) {
-		return
-	}
-
-	if !readOb(s, req.Key) {
-		return
-	}
-
-	if !readOb(s, req.Body) {
+	if !readContents(s, req) {
 		return
 	}
 
@@ -57,6 +49,22 @@ func handleMessage(s *net.TCPConn, reqChannel chan MCRequest) (ret bool) {
 		log.Stderr("Something went wrong, hanging up...")
 	}
 
+	return;
+}
+
+func readContents(s *net.TCPConn, req MCRequest) (rv bool) {
+	rv = true;
+	if !readOb(s, req.Extras) {
+		return
+	}
+
+	if !readOb(s, req.Key) {
+		return
+	}
+
+	if readOb(s, req.Body) {
+		rv = true
+	}
 	return;
 }
 
