@@ -55,7 +55,6 @@ func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
 }
 
 func readContents(s net.Conn, req MCRequest) (rv bool) {
-	rv = true;
 	if !readOb(s, req.Extras) {
 		return
 	}

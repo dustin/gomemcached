@@ -22,7 +22,6 @@ var handlers = map[uint8]handler{
 
 func RunServer(input chan MCRequest) {
 	var s storage;
-	s.cas = 0;
 	s.data = make(map[string]MCItem);
 	for {
 		req := <-input;
@@ -43,8 +42,6 @@ func dispatch(req MCRequest, s *storage) (rv MCResponse) {
 func notFound(req MCRequest, s *storage) MCResponse {
 	var response MCResponse;
 	response.Status = UNKNOWN_COMMAND;
-	response.Cas = 0;
-	response.Fatal = false;
 	return response;
 }
 
