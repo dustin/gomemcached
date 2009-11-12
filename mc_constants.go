@@ -73,21 +73,24 @@ type MCRequest struct {
 	Cas			uint64;
 	Opaque			uint32;
 	Extras, Key, Body	[]byte;
+	ResponseChannel		chan MCResponse;
 }
 
 func (req MCRequest) String() string {
 	return fmt.Sprintf("{MCRequest opcode=%x, key='%s'}",
-                           req.Opcode, req.Key)
+		req.Opcode, req.Key)
 }
 
 type MCResponse struct {
 	Status			uint16;
 	Cas			uint64;
 	Extras, Key, Body	[]byte;
+	Fatal			bool;
 }
 
 func (res MCResponse) String() string {
-	return fmt.Sprintf("{MCResponse status=%x}", res.Status)
+	return fmt.Sprintf("{MCResponse status=%x keylen=%d, extralen=%d, bodylen=%d}",
+		res.Status, len(res.Key), len(res.Extras), len(res.Body))
 }
 
 const HDR_LEN = 24
