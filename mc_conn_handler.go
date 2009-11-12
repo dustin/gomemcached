@@ -1,6 +1,7 @@
 package mc_conn_handler
 
 import . "./mc_constants"
+import . "./byte_manipulation"
 
 import (
 	"log";
@@ -157,31 +158,12 @@ func grokHeader(hdrBytes []byte) (rv MCRequest, ok bool) {
 		return;
 	}
 	rv.Opcode = hdrBytes[1];
-	rv.Key = make([]byte, readInt16(hdrBytes, 2));
+	rv.Key = make([]byte, ReadInt16(hdrBytes, 2));
 	rv.Extras = make([]byte, hdrBytes[4]);
-	bodyLen := readInt32(hdrBytes, 8) - uint32(len(rv.Key)) - uint32(len(rv.Extras));
+	bodyLen := ReadInt32(hdrBytes, 8) - uint32(len(rv.Key)) - uint32(len(rv.Extras));
 	rv.Body = make([]byte, bodyLen);
-	rv.Opaque = readInt32(hdrBytes, 12);
-	rv.Cas = readInt64(hdrBytes, 16);
+	rv.Opaque = ReadInt32(hdrBytes, 12);
+	rv.Cas = ReadInt64(hdrBytes, 16);
 
-	return;
-}
-
-func readInt16(h []byte, offset int) (rv uint16) {
-	rv = uint16(h[offset]) << 8;
-	rv |= uint16(h[offset+1]);
-	return;
-}
-func readInt32(h []byte, offset int) (rv uint32) {
-	rv = uint32(h[offset]) << 24;
-	rv |= uint32(h[offset+1]) << 16;
-	rv |= uint32(h[offset+2]) << 8;
-	rv |= uint32(h[offset+3]);
-	return;
-}
-
-func readInt64(h []byte, offset int) (rv uint64) {
-	rv = uint64(readInt32(h, offset)) << 32;
-	rv |= uint64(readInt32(h, offset+4));
 	return;
 }
