@@ -17,6 +17,7 @@ type handler func(req MCRequest, s *storage) MCResponse
 var handlers = map[uint8]handler{
 	SET: handleSet,
 	GET: handleGet,
+	DELETE: handleDelete,
 	FLUSH: handleFlush,
 }
 
@@ -75,8 +76,14 @@ func handleGet(req MCRequest, s *storage) (ret MCResponse) {
 func handleFlush(req MCRequest, s *storage) (ret MCResponse) {
 	delay := ReadInt32(req.Extras, 0);
 	if delay > 0 {
-		log.Stderrf("Delay not supported (got %d)", delay);
+		log.Stderrf("Delay not supported (got %d)", delay)
 	}
 	s.data = make(map[string]MCItem);
+	return;
+}
+
+func handleDelete(req MCRequest, s *storage) (ret MCResponse) {
+	var i MCItem;
+	s.data[string(req.Key)] = i, false;
 	return;
 }
