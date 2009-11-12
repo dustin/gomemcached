@@ -7,11 +7,16 @@ import (
 	"./mc_storage";
 	"log";
 	"net";
+	"fmt";
+	"flag";
 )
+
+var port *int = flag.Int("port", 11212, "Port on which to listen")
 
 func waitForConnections(ls net.Listener) {
 	reqChannel := make(chan MCRequest);
 	go mc_storage.RunServer(reqChannel);
+	log.Stdoutf("Listening on port %d", *port);
 	for {
 		s, e := ls.Accept();
 		if e == nil {
@@ -24,7 +29,8 @@ func waitForConnections(ls net.Listener) {
 }
 
 func main() {
-	ls, e := net.Listen("tcp", ":11212");
+	flag.Parse();
+	ls, e := net.Listen("tcp", fmt.Sprintf(":%d", *port));
 	if e != nil {
 		log.Exitf("Got an error:  %s", e)
 	}
