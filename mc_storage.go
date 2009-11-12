@@ -17,6 +17,7 @@ type handler func(req MCRequest, s *storage) MCResponse
 var handlers = map[uint8]handler{
 	SET: handleSet,
 	GET: handleGet,
+	FLUSH: handleFlush,
 }
 
 func RunServer(input chan MCRequest) {
@@ -70,5 +71,14 @@ func handleGet(req MCRequest, s *storage) (ret MCResponse) {
 	} else {
 		ret.Status = KEY_ENOENT
 	}
+	return;
+}
+
+func handleFlush(req MCRequest, s *storage) (ret MCResponse) {
+	delay := ReadInt32(req.Extras, 0);
+	if delay > 0 {
+		log.Stderrf("Delay not supported (got %d)", delay);
+	}
+	s.data = make(map[string]MCItem);
 	return;
 }
