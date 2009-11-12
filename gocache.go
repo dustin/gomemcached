@@ -4,26 +4,15 @@ import . "./mc_constants"
 
 import (
 	"./mc_conn_handler";
+	"./mc_storage";
 	"log";
 	"net";
 	"os";
 )
 
-func dataServer(input chan MCRequest) {
-	for {
-		req := <-input;
-		log.Stderrf("Got a request: %s", req);
-		var response MCResponse;
-		response.Status = UNKNOWN_COMMAND;
-		response.Cas = 0;
-		response.Fatal = false;
-		req.ResponseChannel <- response;
-	}
-}
-
 func waitForConnections(ls *net.TCPListener) {
 	reqChannel := make(chan MCRequest);
-	go dataServer(reqChannel);
+	go mc_storage.RunServer(reqChannel);
 	for {
 		s, e := ls.AcceptTCP();
 		if e == nil {
