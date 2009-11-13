@@ -143,12 +143,12 @@ func grokHeader(hdrBytes []byte) (rv MCRequest, ok bool) {
 		return;
 	}
 	rv.Opcode = hdrBytes[1];
-	rv.Key = make([]byte, ReadInt16(hdrBytes, 2));
+	rv.Key = make([]byte, ReadUint16(hdrBytes, 2));
 	rv.Extras = make([]byte, hdrBytes[4]);
-	bodyLen := ReadInt32(hdrBytes, 8) - uint32(len(rv.Key)) - uint32(len(rv.Extras));
+	bodyLen := ReadUint32(hdrBytes, 8) - uint32(len(rv.Key)) - uint32(len(rv.Extras));
 	rv.Body = make([]byte, bodyLen);
-	rv.Opaque = ReadInt32(hdrBytes, 12);
-	rv.Cas = ReadInt64(hdrBytes, 16);
+	rv.Opaque = ReadUint32(hdrBytes, 12);
+	rv.Cas = ReadUint64(hdrBytes, 16);
 
 	return;
 }

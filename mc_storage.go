@@ -49,8 +49,8 @@ func notFound(req MCRequest, s *storage) MCResponse {
 func handleSet(req MCRequest, s *storage) (ret MCResponse) {
 	var item MCItem;
 
-	item.Flags = ReadInt32(req.Extras, 0);
-	item.Expiration = ReadInt32(req.Extras, 4);
+	item.Flags = ReadUint32(req.Extras, 0);
+	item.Expiration = ReadUint32(req.Extras, 4);
 	item.Data = req.Body;
 	ret.Status = SUCCESS;
 	s.cas += 1;
@@ -74,7 +74,7 @@ func handleGet(req MCRequest, s *storage) (ret MCResponse) {
 }
 
 func handleFlush(req MCRequest, s *storage) (ret MCResponse) {
-	delay := ReadInt32(req.Extras, 0);
+	delay := ReadUint32(req.Extras, 0);
 	if delay > 0 {
 		log.Stderrf("Delay not supported (got %d)", delay)
 	}
