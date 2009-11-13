@@ -104,29 +104,25 @@ func writeBytes(s *bufio.Writer, data []byte, ok bool) (rv bool) {
 
 }
 
-func writeByte(s *bufio.Writer, b byte, ok bool) (rv bool) {
+func writeByte(s *bufio.Writer, b byte, ok bool) bool {
 	var data [1]byte;
 	data[0] = b;
-	rv = writeBytes(s, &data, ok);
-	return;
+	return writeBytes(s, &data, ok);
 }
 
-func writeUint16(s *bufio.Writer, n uint16, ok bool) (rv bool) {
+func writeUint16(s *bufio.Writer, n uint16, ok bool) bool {
 	data := WriteUint16(n);
-	rv = writeBytes(s, data, ok);
-	return;
+	return writeBytes(s, data, ok);
 }
 
-func writeUint32(s *bufio.Writer, n uint32, ok bool) (rv bool) {
+func writeUint32(s *bufio.Writer, n uint32, ok bool) bool {
 	data := WriteUint32(n);
-	rv = writeBytes(s, data, ok);
-	return;
+	return writeBytes(s, data, ok);
 }
 
-func writeUint64(s *bufio.Writer, n uint64, ok bool) (rv bool) {
+func writeUint64(s *bufio.Writer, n uint64, ok bool) bool {
 	data := WriteUint64(n);
-	rv = writeBytes(s, data, ok);
-	return;
+	return writeBytes(s, data, ok);
 }
 
 func readOb(s net.Conn, buf []byte) (rv bool) {
