@@ -1,12 +1,18 @@
-.SUFFIXES: .go .6
+include $(GOROOT)/src/Make.$(GOARCH)
 
-OBJS=mc_constants.6 byte_manipulation.6 mc_storage.6 mc_conn_handler.6 gocache.6
+.SUFFIXES: .go .$O
+
+OBJS=mc_constants.$O \
+		 byte_manipulation.$O \
+		 mc_storage.$O \
+		 mc_conn_handler.$O \
+		 gocache.$O
 
 gocache: $(OBJS)
-	6l -o gocache $(OBJS)
+	$(LD) -o gocache $(OBJS)
 
 clean:
 	rm -f $(OBJS) gocache
 
-.go.6:
-	6g $<
+.go.$O:
+	$(GC) $<
