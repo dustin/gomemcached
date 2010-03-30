@@ -9,7 +9,7 @@ OBJS=mc_constants.$O \
 		 gocache.$O
 
 gocache: $(OBJS)
-	$(LD) -o gocache $(OBJS)
+	$(LD) -o gocache gocache.$O
 
 clean:
 	rm -f $(OBJS) gocache
