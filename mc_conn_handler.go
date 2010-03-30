@@ -8,12 +8,17 @@ import (
 	"net";
 	"io";
 	"bufio";
+	"runtime";
 )
 
 func HandleIO(s net.Conn, reqChannel chan MCRequest) {
 	log.Stdout("Processing input from %s", s);
+	defer hangup(s);
 	for handleMessage(s, reqChannel) {
 	}
+}
+
+func hangup(s net.Conn) {
 	s.Close();
 	log.Stdout("Hung up on a connection");
 }
@@ -30,14 +35,9 @@ func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
 		return;
 	}
 
-	req, ok := grokHeader(hdrBytes);
-	if !ok {
-		return
-	}
+	req := grokHeader(hdrBytes);
 
-	if !readContents(s, req) {
-		return
-	}
+	readContents(s, req);
 
 	log.Stdout("Processing message %s", req);
 	req.ResponseChannel = make(chan MCResponse);
@@ -46,7 +46,7 @@ func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
 	ret = !res.Fatal;
 	if ret {
 		log.Stdoutf("Got response %s", res);
-		ret = transmitResponse(s, req, res);
+		transmitResponse(s, req, res);
 	} else {
 		log.Stderr("Something went wrong, hanging up...")
 	}
@@ -54,93 +54,77 @@ func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
 	return;
 }
 
-func readContents(s net.Conn, req MCRequest) (rv bool) {
-	if !readOb(s, req.Extras) {
-		return
-	}
-
-	if !readOb(s, req.Key) {
-		return
-	}
-
-	if readOb(s, req.Body) {
-		rv = true
-	}
-	return;
+func readContents(s net.Conn, req MCRequest) {
+	readOb(s, req.Extras)
+	readOb(s, req.Key)
+	readOb(s, req.Body)
 }
 
-func transmitResponse(s net.Conn, req MCRequest, res MCResponse) (rv bool) {
-	rv = true;
+func transmitResponse(s net.Conn, req MCRequest, res MCResponse) {
 	o := bufio.NewWriter(s);
-	rv = writeByte(o, RES_MAGIC, rv);
-	rv = writeByte(o, req.Opcode, rv);
-	rv = writeUint16(o, uint16(len(res.Key)), rv);
-	rv = writeByte(o, uint8(len(res.Extras)), rv);
-	rv = writeByte(o, 0, rv);
-	rv = writeUint16(o, res.Status, rv);
-	rv = writeUint32(o, uint32(len(res.Body))+
+	writeByte(o, RES_MAGIC);
+	writeByte(o, req.Opcode);
+	writeUint16(o, uint16(len(res.Key)));
+	writeByte(o, uint8(len(res.Extras)));
+	writeByte(o, 0);
+	writeUint16(o, res.Status);
+	writeUint32(o, uint32(len(res.Body))+
 		uint32(len(res.Key))+
-		uint32(len(res.Extras)),
-		rv);
-	rv = writeUint32(o, req.Opaque, rv);
-	rv = writeUint64(o, res.Cas, rv);
-	rv = writeBytes(o, res.Extras, rv);
-	rv = writeBytes(o, res.Key, rv);
-	rv = writeBytes(o, res.Body, rv);
+		uint32(len(res.Extras)));
+	writeUint32(o, req.Opaque);
+	writeUint64(o, res.Cas);
+	writeBytes(o, res.Extras);
+	writeBytes(o, res.Key);
+	writeBytes(o, res.Body);
 	o.Flush();
 	return;
 }
 
-func writeBytes(s *bufio.Writer, data []byte, ok bool) (rv bool) {
-	rv = ok;
-	if ok && len(data) > 0 {
+func writeBytes(s *bufio.Writer, data []byte) {
+	if len(data) > 0 {
 		written, err := s.Write(data);
 		if err != nil || written != len(data) {
 			log.Stderrf("Error writing bytes:  %s", err);
-			rv = false;
+			runtime.Goexit();
 		}
 	}
 	return;
 
 }
 
-func writeByte(s *bufio.Writer, b byte, ok bool) bool {
+func writeByte(s *bufio.Writer, b byte) {
 	var data [1]byte;
 	data[0] = b;
-	return writeBytes(s, &data, ok);
+	writeBytes(s, &data);
 }
 
-func writeUint16(s *bufio.Writer, n uint16, ok bool) bool {
+func writeUint16(s *bufio.Writer, n uint16) {
 	data := WriteUint16(n);
-	return writeBytes(s, data, ok);
+	writeBytes(s, data);
 }
 
-func writeUint32(s *bufio.Writer, n uint32, ok bool) bool {
+func writeUint32(s *bufio.Writer, n uint32) {
 	data := WriteUint32(n);
-	return writeBytes(s, data, ok);
+	writeBytes(s, data);
 }
 
-func writeUint64(s *bufio.Writer, n uint64, ok bool) bool {
+func writeUint64(s *bufio.Writer, n uint64) {
 	data := WriteUint64(n);
-	return writeBytes(s, data, ok);
+	writeBytes(s, data);
 }
 
-func readOb(s net.Conn, buf []byte) (rv bool) {
-	rv = true;
+func readOb(s net.Conn, buf []byte) {
 	x, err := io.ReadFull(s, buf);
 	if err != nil || x != len(buf) {
 		log.Stderrf("Error reading part: %s", err);
-		rv = false;
+		runtime.Goexit();
 	}
-	return;
 }
 
-func grokHeader(hdrBytes []byte) (rv MCRequest, ok bool) {
-	ok = true;
+func grokHeader(hdrBytes []byte) (rv MCRequest) {
 	if hdrBytes[0] != REQ_MAGIC {
 		log.Stderrf("Bad magic: %x", hdrBytes[0]);
-		ok = false;
-		return;
+		runtime.Goexit();
 	}
 	rv.Opcode = hdrBytes[1];
 	rv.Key = make([]byte, ReadUint16(hdrBytes, 2));
@@ -149,6 +133,5 @@ func grokHeader(hdrBytes []byte) (rv MCRequest, ok bool) {
 	rv.Body = make([]byte, bodyLen);
 	rv.Opaque = ReadUint32(hdrBytes, 12);
 	rv.Cas = ReadUint64(hdrBytes, 16);
-
 	return;
 }
