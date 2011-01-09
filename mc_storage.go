@@ -26,7 +26,7 @@ func RunServer(input chan MCRequest) {
 	s.data = make(map[string]MCItem)
 	for {
 		req := <-input
-		log.Stderrf("Got a request: %s", req)
+		log.Printf("Got a request: %s", req)
 		req.ResponseChannel <- dispatch(req, &s)
 	}
 }
@@ -76,7 +76,7 @@ func handleGet(req MCRequest, s *storage) (ret MCResponse) {
 func handleFlush(req MCRequest, s *storage) (ret MCResponse) {
 	delay := ReadUint32(req.Extras, 0)
 	if delay > 0 {
-		log.Stderrf("Delay not supported (got %d)", delay)
+		log.Printf("Delay not supported (got %d)", delay)
 	}
 	s.data = make(map[string]MCItem)
 	return
