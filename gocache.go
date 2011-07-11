@@ -32,7 +32,7 @@ func main() {
 	flag.Parse()
 	ls, e := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if e != nil {
-		log.Exitf("Got an error:  %s", e)
+		log.Fatalf("Got an error:  %s", e)
 	}
 
 	waitForConnections(ls)
