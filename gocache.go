@@ -3,12 +3,12 @@ package main
 import . "./mc_constants"
 
 import (
-	"./mc_conn_handler";
-	"./mc_storage";
-	"log";
-	"net";
-	"fmt";
-	"flag";
+	"./mc_conn_handler"
+	"./mc_storage"
+	"log"
+	"net"
+	"fmt"
+	"flag"
 )
 
 var port *int = flag.Int("port", 11212, "Port on which to listen")

@@ -3,11 +3,11 @@ package mc_conn_handler
 import . "./mc_constants"
 
 import (
-	"log";
-	"net";
-	"io";
-	"bufio";
-	"runtime";
+	"log"
+	"net"
+	"io"
+	"bufio"
+	"runtime"
 	"encoding/binary"
 )
 

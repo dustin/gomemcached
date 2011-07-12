@@ -8,17 +8,17 @@ import (
 )
 
 type storage struct {
-	data	map[string]MCItem
-	cas	uint64
+	data map[string]MCItem
+	cas  uint64
 }
 
 type handler func(req MCRequest, s *storage) MCResponse
 
 var handlers = map[uint8]handler{
-	SET: handleSet,
-	GET: handleGet,
+	SET:    handleSet,
+	GET:    handleGet,
 	DELETE: handleDelete,
-	FLUSH: handleFlush,
+	FLUSH:  handleFlush,
 }
 
 func RunServer(input chan MCRequest) {
