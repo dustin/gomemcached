@@ -3,7 +3,6 @@ include $(GOROOT)/src/Make.inc
 .SUFFIXES: .go .$O
 
 OBJS=mc_constants.$O \
-		 byte_manipulation.$O \
 		 mc_storage.$O \
 		 mc_conn_handler.$O \
 		 gocache.$O

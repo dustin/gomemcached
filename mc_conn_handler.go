@@ -1,7 +1,6 @@
 package mc_conn_handler
 
 import . "./mc_constants"
-import . "./byte_manipulation"
 
 import (
 	"log";
@@ -9,6 +8,7 @@ import (
 	"io";
 	"bufio";
 	"runtime";
+	"encoding/binary"
 )
 
 func HandleIO(s net.Conn, reqChannel chan MCRequest) {
@@ -99,17 +99,20 @@ func writeByte(s *bufio.Writer, b byte) {
 }
 
 func writeUint16(s *bufio.Writer, n uint16) {
-	data := WriteUint16(n)
+	data := []byte{0, 0}
+	binary.BigEndian.PutUint16(data, n)
 	writeBytes(s, data)
 }
 
 func writeUint32(s *bufio.Writer, n uint32) {
-	data := WriteUint32(n)
+	data := []byte{0, 0, 0, 0}
+	binary.BigEndian.PutUint32(data, n)
 	writeBytes(s, data)
 }
 
 func writeUint64(s *bufio.Writer, n uint64) {
-	data := WriteUint64(n)
+	data := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	binary.BigEndian.PutUint64(data, n)
 	writeBytes(s, data)
 }
 
@@ -127,11 +130,11 @@ func grokHeader(hdrBytes []byte) (rv MCRequest) {
 		runtime.Goexit()
 	}
 	rv.Opcode = hdrBytes[1]
-	rv.Key = make([]byte, ReadUint16(hdrBytes, 2))
+	rv.Key = make([]byte, binary.BigEndian.Uint16(hdrBytes[2:]))
 	rv.Extras = make([]byte, hdrBytes[4])
-	bodyLen := ReadUint32(hdrBytes, 8) - uint32(len(rv.Key)) - uint32(len(rv.Extras))
+	bodyLen := binary.BigEndian.Uint32(hdrBytes[8:]) - uint32(len(rv.Key)) - uint32(len(rv.Extras))
 	rv.Body = make([]byte, bodyLen)
-	rv.Opaque = ReadUint32(hdrBytes, 12)
-	rv.Cas = ReadUint64(hdrBytes, 16)
+	rv.Opaque = binary.BigEndian.Uint32(hdrBytes[12:])
+	rv.Cas = binary.BigEndian.Uint64(hdrBytes[16:])
 	return
 }

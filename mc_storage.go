@@ -1,10 +1,10 @@
 package mc_storage
 
 import . "./mc_constants"
-import . "./byte_manipulation"
 
 import (
 	"log"
+	"encoding/binary"
 )
 
 type storage struct {
@@ -49,8 +49,8 @@ func notFound(req MCRequest, s *storage) MCResponse {
 func handleSet(req MCRequest, s *storage) (ret MCResponse) {
 	var item MCItem
 
-	item.Flags = ReadUint32(req.Extras, 0)
-	item.Expiration = ReadUint32(req.Extras, 4)
+	item.Flags = binary.BigEndian.Uint32(req.Extras)
+	item.Expiration = binary.BigEndian.Uint32(req.Extras[4:])
 	item.Data = req.Body
 	ret.Status = SUCCESS
 	s.cas += 1
@@ -64,7 +64,7 @@ func handleSet(req MCRequest, s *storage) (ret MCResponse) {
 func handleGet(req MCRequest, s *storage) (ret MCResponse) {
 	if item, ok := s.data[string(req.Key)]; ok {
 		ret.Status = SUCCESS
-		ret.Extras = WriteUint32(item.Flags)
+		binary.BigEndian.PutUint32(ret.Extras, item.Flags)
 		ret.Cas = item.Cas
 		ret.Body = item.Data
 	} else {
@@ -74,7 +74,7 @@ func handleGet(req MCRequest, s *storage) (ret MCResponse) {
 }
 
 func handleFlush(req MCRequest, s *storage) (ret MCResponse) {
-	delay := ReadUint32(req.Extras, 0)
+	delay := binary.BigEndian.Uint32(req.Extras)
 	if delay > 0 {
 		log.Printf("Delay not supported (got %d)", delay)
 	}
