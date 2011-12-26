@@ -83,7 +83,6 @@ func handleFlush(req MCRequest, s *storage) (ret MCResponse) {
 }
 
 func handleDelete(req MCRequest, s *storage) (ret MCResponse) {
-	var i MCItem
-	s.data[string(req.Key)] = i, false
+	delete(s.data, string(req.Key))
 	return
 }
