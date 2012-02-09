@@ -116,6 +116,11 @@ func (res MCResponse) String() string {
 		res.Status, len(res.Key), len(res.Extras), len(res.Body))
 }
 
+func (res MCResponse) Error() string {
+	return fmt.Sprintf("MCResponse status=%x, msg: %s",
+		res.Status, string(res.Body))
+}
+
 type MCItem struct {
 	Cas               uint64
 	Flags, Expiration uint32
