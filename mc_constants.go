@@ -1,4 +1,4 @@
-package mc_constants
+package gomemcached
 
 import "fmt"
 
@@ -52,6 +52,15 @@ const (
 	RINCRQ     = 0x3a
 	RDECR      = 0x3b
 	RDECRQ     = 0x3c
+
+	TAP_CONNECT          = 0x40
+	TAP_MUTATION         = 0x41
+	TAP_DELETE           = 0x42
+	TAP_FLUSH            = 0x43
+	TAP_OPAQUE           = 0x44
+	TAP_VBUCKET_SET      = 0x45
+	TAP_CHECKPOINT_START = 0x46
+	TAP_CHECKPOINT_END   = 0x47
 )
 
 type ResponseStatus int
@@ -68,10 +77,24 @@ const (
 	ENOMEM          = 0x82
 )
 
+type TapFlags uint32
+
+const (
+	BACKFILL          = 0x01
+	DUMP              = 0x02
+	LIST_VBUCKETS     = 0x04
+	TAKEOVER_VBUCKETS = 0x08
+	SUPPORT_ACK       = 0x10
+	REQUEST_KEYS_ONLY = 0x20
+	CHECKPOINT        = 0x40
+	REGISTERED_CLIENT = 0x80
+)
+
 type MCRequest struct {
 	Opcode            uint8
 	Cas               uint64
 	Opaque            uint32
+	VBucket           uint16
 	Extras, Key, Body []byte
 	ResponseChannel   chan MCResponse
 }

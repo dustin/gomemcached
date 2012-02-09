@@ -1,17 +1,16 @@
-package mc_conn_handler
-
-import . "./mc_constants"
+package main
 
 import (
+	"bufio"
+	"encoding/binary"
+	"github.com/dustin/gomemcached"
+	"io"
 	"log"
 	"net"
-	"io"
-	"bufio"
 	"runtime"
-	"encoding/binary"
 )
 
-func HandleIO(s net.Conn, reqChannel chan MCRequest) {
+func HandleIO(s net.Conn, reqChannel chan gomemcached.MCRequest) {
 	log.Print("Processing input from %s", s)
 	defer hangup(s)
 	for handleMessage(s, reqChannel) {
@@ -23,14 +22,14 @@ func hangup(s net.Conn) {
 	log.Print("Hung up on a connection")
 }
 
-func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
+func handleMessage(s net.Conn, reqChannel chan gomemcached.MCRequest) (ret bool) {
 	log.Printf("Handling a message...")
-	hdrBytes := make([]byte, HDR_LEN)
+	hdrBytes := make([]byte, gomemcached.HDR_LEN)
 	ret = false
 
 	log.Printf("Reading header...")
 	bytesRead, err := io.ReadFull(s, hdrBytes)
-	if err != nil || bytesRead != HDR_LEN {
+	if err != nil || bytesRead != gomemcached.HDR_LEN {
 		log.Print("Error reading message: %s (%d bytes)", err, bytesRead)
 		return
 	}
@@ -40,7 +39,7 @@ func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
 	readContents(s, req)
 
 	log.Print("Processing message %s", req)
-	req.ResponseChannel = make(chan MCResponse)
+	req.ResponseChannel = make(chan gomemcached.MCResponse)
 	reqChannel <- req
 	res := <-req.ResponseChannel
 	ret = !res.Fatal
@@ -54,15 +53,15 @@ func handleMessage(s net.Conn, reqChannel chan MCRequest) (ret bool) {
 	return
 }
 
-func readContents(s net.Conn, req MCRequest) {
+func readContents(s net.Conn, req gomemcached.MCRequest) {
 	readOb(s, req.Extras)
 	readOb(s, req.Key)
 	readOb(s, req.Body)
 }
 
-func transmitResponse(s net.Conn, req MCRequest, res MCResponse) {
+func transmitResponse(s net.Conn, req gomemcached.MCRequest, res gomemcached.MCResponse) {
 	o := bufio.NewWriter(s)
-	writeByte(o, RES_MAGIC)
+	writeByte(o, gomemcached.RES_MAGIC)
 	writeByte(o, req.Opcode)
 	writeUint16(o, uint16(len(res.Key)))
 	writeByte(o, uint8(len(res.Extras)))
@@ -124,8 +123,8 @@ func readOb(s net.Conn, buf []byte) {
 	}
 }
 
-func grokHeader(hdrBytes []byte) (rv MCRequest) {
-	if hdrBytes[0] != REQ_MAGIC {
+func grokHeader(hdrBytes []byte) (rv gomemcached.MCRequest) {
+	if hdrBytes[0] != gomemcached.REQ_MAGIC {
 		log.Printf("Bad magic: %x", hdrBytes[0])
 		runtime.Goexit()
 	}

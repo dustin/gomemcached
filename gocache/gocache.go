@@ -1,27 +1,24 @@
 package main
 
-import . "./mc_constants"
-
 import (
-	"./mc_conn_handler"
-	"./mc_storage"
+	"flag"
+	"fmt"
+	"github.com/dustin/gomemcached"
 	"log"
 	"net"
-	"fmt"
-	"flag"
 )
 
 var port *int = flag.Int("port", 11212, "Port on which to listen")
 
 func waitForConnections(ls net.Listener) {
-	reqChannel := make(chan MCRequest)
-	go mc_storage.RunServer(reqChannel)
+	reqChannel := make(chan gomemcached.MCRequest)
+	go RunServer(reqChannel)
 	log.Printf("Listening on port %d", *port)
 	for {
 		s, e := ls.Accept()
 		if e == nil {
 			log.Print("Got a connection %s", s)
-			go mc_conn_handler.HandleIO(s, reqChannel)
+			go HandleIO(s, reqChannel)
 		} else {
 			log.Printf("Error accepting from %s", ls)
 		}
