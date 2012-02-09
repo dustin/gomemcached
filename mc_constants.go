@@ -73,6 +73,7 @@ const (
 	EINVAL          = 0x04
 	NOT_STORED      = 0x05
 	DELTA_BADVAL    = 0x06
+	NOT_MY_VBUCKET  = 0x07
 	UNKNOWN_COMMAND = 0x81
 	ENOMEM          = 0x82
 )
