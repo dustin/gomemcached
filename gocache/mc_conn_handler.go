@@ -62,7 +62,7 @@ func readContents(s net.Conn, req gomemcached.MCRequest) {
 func transmitResponse(s net.Conn, req gomemcached.MCRequest, res gomemcached.MCResponse) {
 	o := bufio.NewWriter(s)
 	writeByte(o, gomemcached.RES_MAGIC)
-	writeByte(o, req.Opcode)
+	writeByte(o, byte(req.Opcode))
 	writeUint16(o, uint16(len(res.Key)))
 	writeByte(o, uint8(len(res.Extras)))
 	writeByte(o, 0)
@@ -128,7 +128,7 @@ func grokHeader(hdrBytes []byte) (rv gomemcached.MCRequest) {
 		log.Printf("Bad magic: %x", hdrBytes[0])
 		runtime.Goexit()
 	}
-	rv.Opcode = hdrBytes[1]
+	rv.Opcode = gomemcached.CommandCode(hdrBytes[1])
 	rv.Key = make([]byte, binary.BigEndian.Uint16(hdrBytes[2:]))
 	rv.Extras = make([]byte, hdrBytes[4])
 	bodyLen := binary.BigEndian.Uint32(hdrBytes[8:]) - uint32(len(rv.Key)) - uint32(len(rv.Extras))

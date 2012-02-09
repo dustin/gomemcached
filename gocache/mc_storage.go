@@ -13,7 +13,7 @@ type storage struct {
 
 type handler func(req gomemcached.MCRequest, s *storage) gomemcached.MCResponse
 
-var handlers = map[uint8]handler{
+var handlers = map[gomemcached.CommandCode]handler{
 	gomemcached.SET:    handleSet,
 	gomemcached.GET:    handleGet,
 	gomemcached.DELETE: handleDelete,
