@@ -1,3 +1,4 @@
+// Memcached binary protocol packet formats and constants.
 package gomemcached
 
 import "fmt"
