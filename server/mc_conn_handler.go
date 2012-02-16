@@ -1,13 +1,14 @@
-package main
+package memcached
 
 import (
 	"bufio"
 	"encoding/binary"
 	"errors"
-	"github.com/dustin/gomemcached"
 	"io"
 	"log"
 	"runtime"
+
+	"github.com/dustin/gomemcached"
 )
 
 func HandleIO(s io.ReadWriteCloser, reqChannel chan gomemcached.MCRequest) {

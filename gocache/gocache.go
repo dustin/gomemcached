@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/dustin/gomemcached"
 	"log"
 	"net"
+
+	"github.com/dustin/gomemcached"
+	"github.com/dustin/gomemcached/server"
 )
 
 var port *int = flag.Int("port", 11212, "Port on which to listen")
@@ -18,7 +20,7 @@ func waitForConnections(ls net.Listener) {
 		s, e := ls.Accept()
 		if e == nil {
 			log.Print("Got a connection %s", s)
-			go HandleIO(s, reqChannel)
+			go memcached.HandleIO(s, reqChannel)
 		} else {
 			log.Printf("Error accepting from %s", ls)
 		}
