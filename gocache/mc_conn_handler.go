@@ -3,40 +3,33 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"github.com/dustin/gomemcached"
 	"io"
 	"log"
-	"net"
 	"runtime"
 )
 
-func HandleIO(s net.Conn, reqChannel chan gomemcached.MCRequest) {
+func HandleIO(s io.ReadWriteCloser, reqChannel chan gomemcached.MCRequest) {
 	log.Print("Processing input from %s", s)
 	defer hangup(s)
-	for handleMessage(s, reqChannel) {
+	for handleMessage(s, s, reqChannel) {
 	}
 }
 
-func hangup(s net.Conn) {
+func hangup(s io.ReadCloser) {
 	s.Close()
 	log.Print("Hung up on a connection")
 }
 
-func handleMessage(s net.Conn, reqChannel chan gomemcached.MCRequest) (ret bool) {
+func handleMessage(r io.Reader, w io.Writer, reqChannel chan gomemcached.MCRequest) (ret bool) {
 	log.Printf("Handling a message...")
-	hdrBytes := make([]byte, gomemcached.HDR_LEN)
-	ret = false
 
 	log.Printf("Reading header...")
-	bytesRead, err := io.ReadFull(s, hdrBytes)
-	if err != nil || bytesRead != gomemcached.HDR_LEN {
-		log.Print("Error reading message: %s (%d bytes)", err, bytesRead)
+	req, err := ReadPacket(r)
+	if err != nil {
 		return
 	}
-
-	req := grokHeader(hdrBytes)
-
-	readContents(s, req)
 
 	log.Print("Processing message %s", req)
 	req.ResponseChannel = make(chan gomemcached.MCResponse)
@@ -45,7 +38,7 @@ func handleMessage(s net.Conn, reqChannel chan gomemcached.MCRequest) (ret bool)
 	ret = !res.Fatal
 	if ret {
 		log.Printf("Got response %s", res)
-		transmitResponse(s, req, res)
+		transmitResponse(w, req, res)
 	} else {
 		log.Print("Something went wrong, hanging up...")
 	}
@@ -53,13 +46,30 @@ func handleMessage(s net.Conn, reqChannel chan gomemcached.MCRequest) (ret bool)
 	return
 }
 
-func readContents(s net.Conn, req gomemcached.MCRequest) {
+func ReadPacket(r io.Reader) (rv gomemcached.MCRequest, err error) {
+	hdrBytes := make([]byte, gomemcached.HDR_LEN)
+	bytesRead, err := io.ReadFull(r, hdrBytes)
+	if err != nil {
+		log.Print("Error reading message: %s (%d bytes)", err, bytesRead)
+		return
+	}
+	if bytesRead != gomemcached.HDR_LEN {
+		return rv, errors.New("Short read.")
+	}
+
+	rv = grokHeader(hdrBytes)
+
+	readContents(r, &rv)
+	return
+}
+
+func readContents(s io.Reader, req *gomemcached.MCRequest) {
 	readOb(s, req.Extras)
 	readOb(s, req.Key)
 	readOb(s, req.Body)
 }
 
-func transmitResponse(s net.Conn, req gomemcached.MCRequest, res gomemcached.MCResponse) {
+func transmitResponse(s io.Writer, req gomemcached.MCRequest, res gomemcached.MCResponse) {
 	o := bufio.NewWriter(s)
 	writeByte(o, gomemcached.RES_MAGIC)
 	writeByte(o, byte(req.Opcode))
@@ -115,7 +125,7 @@ func writeUint64(s *bufio.Writer, n uint64) {
 	writeBytes(s, data)
 }
 
-func readOb(s net.Conn, buf []byte) {
+func readOb(s io.Reader, buf []byte) {
 	x, err := io.ReadFull(s, buf)
 	if err != nil || x != len(buf) {
 		log.Printf("Error reading part: %s", err)
