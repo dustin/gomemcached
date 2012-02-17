@@ -4,12 +4,19 @@ package memcached
 import (
 	"bufio"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 
 	"github.com/dustin/gomemcached"
 )
+
+type BadMagic struct {
+	was uint8
+}
+
+func (b BadMagic) Error() string {
+	return fmt.Sprintf("Bad magic:  0x%02x", b.was)
+}
 
 func HandleIO(s io.ReadWriteCloser, reqChannel chan gomemcached.MCRequest) {
 	defer s.Close()
@@ -132,7 +139,7 @@ func readOb(s io.Reader, buf []byte) error {
 
 func grokHeader(hdrBytes []byte) (rv gomemcached.MCRequest, err error) {
 	if hdrBytes[0] != gomemcached.REQ_MAGIC {
-		return rv, errors.New(fmt.Sprintf("Bad magic: %x", hdrBytes[0]))
+		return rv, &BadMagic{was: hdrBytes[0]}
 	}
 	rv.Opcode = gomemcached.CommandCode(hdrBytes[1])
 	rv.Key = make([]byte, binary.BigEndian.Uint16(hdrBytes[2:]))
