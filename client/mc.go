@@ -40,14 +40,14 @@ func (c *Client) Close() {
 }
 
 // Send a custom request and get the response.
-func (client *Client) Send(req gomemcached.MCRequest) (rv gomemcached.MCResponse) {
+func (client *Client) Send(req *gomemcached.MCRequest) (rv gomemcached.MCResponse) {
 	transmitRequest(client.writer, req)
 	rv = client.getResponse()
 	return
 }
 
 // Send a request, but do not wait for a response.
-func (client *Client) Transmit(req gomemcached.MCRequest) {
+func (client *Client) Transmit(req *gomemcached.MCRequest) {
 	transmitRequest(client.writer, req)
 }
 
@@ -66,7 +66,7 @@ func (client *Client) Get(vb uint16, key string) gomemcached.MCResponse {
 	req.Opaque = 0
 	req.Extras = []byte{}
 	req.Body = []byte{}
-	return client.Send(req)
+	return client.Send(&req)
 }
 
 // Delete a key.
@@ -79,7 +79,7 @@ func (client *Client) Del(vb uint16, key string) gomemcached.MCResponse {
 	req.Opaque = 0
 	req.Extras = []byte{}
 	req.Body = []byte{}
-	return client.Send(req)
+	return client.Send(&req)
 }
 
 func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,
@@ -94,7 +94,7 @@ func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,
 	req.Extras = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 	binary.BigEndian.PutUint64(req.Extras, uint64(flags)<<32|uint64(exp))
 	req.Body = body
-	return client.Send(req)
+	return client.Send(&req)
 }
 
 // Add a value for a key (store if not exists).
@@ -131,7 +131,7 @@ func (client *Client) Stats(key string) []StatValue {
 	req.Extras = []byte{}
 	req.Body = []byte{}
 
-	transmitRequest(client.writer, req)
+	transmitRequest(client.writer, &req)
 
 	for {
 		res := client.getResponse()
@@ -181,7 +181,7 @@ func grokHeader(hdrBytes []byte) (rv gomemcached.MCResponse) {
 	return
 }
 
-func transmitRequest(o *bufio.Writer, req gomemcached.MCRequest) {
+func transmitRequest(o *bufio.Writer, req *gomemcached.MCRequest) {
 	// 0
 	writeByte(o, gomemcached.REQ_MAGIC)
 	writeByte(o, byte(req.Opcode))
