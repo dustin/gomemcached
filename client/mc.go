@@ -46,6 +46,16 @@ func (client *Client) Send(req gomemcached.MCRequest) (rv gomemcached.MCResponse
 	return
 }
 
+// Send a request, but do not wait for a response.
+func (client *Client) Transmit(req gomemcached.MCRequest) {
+	transmitRequest(client.writer, req)
+}
+
+// Receive a response
+func (client *Client) Receive() gomemcached.MCResponse {
+	return client.getResponse()
+}
+
 // Get the value for a key.
 func (client *Client) Get(vb uint16, key string) gomemcached.MCResponse {
 	var req gomemcached.MCRequest
