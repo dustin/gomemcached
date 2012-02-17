@@ -102,7 +102,7 @@ type MCRequest struct {
 }
 
 func (req MCRequest) String() string {
-	return fmt.Sprintf("{MCRequest opcode=%x, key='%s'}",
+	return fmt.Sprintf("{MCRequest opcode=%s, key='%s'}",
 		req.Opcode, req.Key)
 }
 
@@ -130,3 +130,67 @@ type MCItem struct {
 }
 
 const HDR_LEN = 24
+
+// Mapping of CommandCode -> name of command (not exhaustive)
+var CommandNames map[CommandCode]string
+
+func init() {
+	CommandNames = make(map[CommandCode]string)
+	CommandNames[GET] = "GET"
+	CommandNames[SET] = "SET"
+	CommandNames[ADD] = "ADD"
+	CommandNames[REPLACE] = "REPLACE"
+	CommandNames[DELETE] = "DELETE"
+	CommandNames[INCREMENT] = "INCREMENT"
+	CommandNames[DECREMENT] = "DECREMENT"
+	CommandNames[QUIT] = "QUIT"
+	CommandNames[FLUSH] = "FLUSH"
+	CommandNames[GETQ] = "GETQ"
+	CommandNames[NOOP] = "NOOP"
+	CommandNames[VERSION] = "VERSION"
+	CommandNames[GETK] = "GETK"
+	CommandNames[GETKQ] = "GETKQ"
+	CommandNames[APPEND] = "APPEND"
+	CommandNames[PREPEND] = "PREPEND"
+	CommandNames[STAT] = "STAT"
+	CommandNames[SETQ] = "SETQ"
+	CommandNames[ADDQ] = "ADDQ"
+	CommandNames[REPLACEQ] = "REPLACEQ"
+	CommandNames[DELETEQ] = "DELETEQ"
+	CommandNames[INCREMENTQ] = "INCREMENTQ"
+	CommandNames[DECREMENTQ] = "DECREMENTQ"
+	CommandNames[QUITQ] = "QUITQ"
+	CommandNames[FLUSHQ] = "FLUSHQ"
+	CommandNames[APPENDQ] = "APPENDQ"
+	CommandNames[PREPENDQ] = "PREPENDQ"
+	CommandNames[RGET] = "RGET"
+	CommandNames[RSET] = "RSET"
+	CommandNames[RSETQ] = "RSETQ"
+	CommandNames[RAPPEND] = "RAPPEND"
+	CommandNames[RAPPENDQ] = "RAPPENDQ"
+	CommandNames[RPREPEND] = "RPREPEND"
+	CommandNames[RPREPENDQ] = "RPREPENDQ"
+	CommandNames[RDELETE] = "RDELETE"
+	CommandNames[RDELETEQ] = "RDELETEQ"
+	CommandNames[RINCR] = "RINCR"
+	CommandNames[RINCRQ] = "RINCRQ"
+	CommandNames[RDECR] = "RDECR"
+	CommandNames[RDECRQ] = "RDECRQ"
+
+	CommandNames[TAP_CONNECT] = "TAP_CONNECT"
+	CommandNames[TAP_MUTATION] = "TAP_MUTATION"
+	CommandNames[TAP_DELETE] = "TAP_DELETE"
+	CommandNames[TAP_FLUSH] = "TAP_FLUSH"
+	CommandNames[TAP_OPAQUE] = "TAP_OPAQUE"
+	CommandNames[TAP_VBUCKET_SET] = "TAP_VBUCKET_SET"
+	CommandNames[TAP_CHECKPOINT_START] = "TAP_CHECKPOINT_START"
+	CommandNames[TAP_CHECKPOINT_END] = "TAP_CHECKPOINT_END"
+}
+
+func (o CommandCode) String() (rv string) {
+	rv = CommandNames[o]
+	if rv == "" {
+		rv = fmt.Sprintf("0x%02x", o)
+	}
+	return rv
+}
