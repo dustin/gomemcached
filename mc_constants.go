@@ -190,7 +190,7 @@ func init() {
 func (o CommandCode) String() (rv string) {
 	rv = CommandNames[o]
 	if rv == "" {
-		rv = fmt.Sprintf("0x%02x", o)
+		rv = fmt.Sprintf("0x%02x", int(o))
 	}
 	return rv
 }
