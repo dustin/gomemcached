@@ -4,12 +4,19 @@ package memcached
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 
+	"github.com/dustin/go-humanize"
 	"github.com/dustin/gomemcached"
 )
 
+// The maximum reasonable body length to expect.
+// Anything larger than this will result in an error.
+var MaxBodyLen = uint32(1 * 1e6)
+
+// Error returned when a packet doesn't start with proper magic.
 type BadMagic struct {
 	was uint8
 }
@@ -145,6 +152,10 @@ func grokHeader(hdrBytes []byte) (rv gomemcached.MCRequest, err error) {
 	rv.Key = make([]byte, binary.BigEndian.Uint16(hdrBytes[2:]))
 	rv.Extras = make([]byte, hdrBytes[4])
 	bodyLen := binary.BigEndian.Uint32(hdrBytes[8:]) - uint32(len(rv.Key)) - uint32(len(rv.Extras))
+	if bodyLen > MaxBodyLen {
+		return rv, errors.New(fmt.Sprintf("%d is too big (max %s)",
+			bodyLen, humanize.Bytes(uint64(MaxBodyLen))))
+	}
 	rv.Body = make([]byte, bodyLen)
 	rv.Opaque = binary.BigEndian.Uint32(hdrBytes[12:])
 	rv.Cas = binary.BigEndian.Uint64(hdrBytes[16:])
