@@ -27,11 +27,11 @@ func Connect(prot, dest string) (rv *Client, err error) {
 	if err != nil {
 		return nil, err
 	}
-	rv = new(Client)
-	rv.conn = conn
-	rv.writer = bufio.NewWriterSize(rv.conn, bufsize)
-	rv.hdrBuf = make([]byte, gomemcached.HDR_LEN)
-	return
+	return &Client{
+		conn:   conn,
+		writer: bufio.NewWriterSize(conn, bufsize),
+		hdrBuf: make([]byte, gomemcached.HDR_LEN),
+	}, nil
 }
 
 // Close the connection when you're done.
