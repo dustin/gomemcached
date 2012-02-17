@@ -151,6 +151,8 @@ func grokHeader(hdrBytes []byte) (rv gomemcached.MCRequest, err error) {
 	rv.Opcode = gomemcached.CommandCode(hdrBytes[1])
 	rv.Key = make([]byte, binary.BigEndian.Uint16(hdrBytes[2:]))
 	rv.Extras = make([]byte, hdrBytes[4])
+	// Vbucket at 6:7
+	rv.VBucket = binary.BigEndian.Uint16(hdrBytes[6:])
 	bodyLen := binary.BigEndian.Uint32(hdrBytes[8:]) - uint32(len(rv.Key)) - uint32(len(rv.Extras))
 	if bodyLen > MaxBodyLen {
 		return rv, errors.New(fmt.Sprintf("%d is too big (max %s)",
