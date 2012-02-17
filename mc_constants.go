@@ -102,8 +102,8 @@ type MCRequest struct {
 }
 
 func (req MCRequest) String() string {
-	return fmt.Sprintf("{MCRequest opcode=%s, key='%s'}",
-		req.Opcode, req.Key)
+	return fmt.Sprintf("{MCRequest opcode=%s, bodylen=%d, key='%s'}",
+		req.Opcode, len(req.Body), req.Key)
 }
 
 type MCResponse struct {
