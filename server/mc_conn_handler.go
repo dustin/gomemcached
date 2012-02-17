@@ -1,3 +1,4 @@
+// Useful functions for building your own memcached server.
 package memcached
 
 import (
