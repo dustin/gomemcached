@@ -148,6 +148,15 @@ func (client *Client) Stats(key string) []StatValue {
 	return rv
 }
 
+// Get the stats from the server as a map
+func (client *Client) StatsMap(key string) map[string]string {
+	rv := make(map[string]string)
+	for _, sv := range client.Stats(key) {
+		rv[sv.Key] = sv.Val
+	}
+	return rv
+}
+
 func (client *Client) getResponse() gomemcached.MCResponse {
 	bytesRead, err := io.ReadFull(client.conn, client.hdrBuf)
 	if err != nil || bytesRead != gomemcached.HDR_LEN {
