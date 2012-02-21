@@ -1,11 +1,12 @@
 # gomemcached
 
-This is a memcached server in [go][go].
+This is a memcached binary protocol toolkit in [go][go].
 
-It's currently exceedingly simple, but I'll make it do something
-useful over time as I play with the language more.
+It provides client and server functionality as well as a little sample
+server showing how I might make a server if I valued purity over
+performance.
 
-## Design
+## Server Design
 
 <div>
   <img src="http://dustin.github.com/images/gomemcached.png"
@@ -27,5 +28,5 @@ are specific areas I know need work).  This is just my attempt to
 learn the language somewhat.
 
 [go]: http://golang.org/
-[gocache]: gomemcached/blob/master/gocache.go
-[storage]: gomemcached/blob/master/mc_storage.go
+[gocache]: gomemcached/blob/master/gocache/gocache.go
+[storage]: gomemcached/blob/master/gocache/mc_storage.go
