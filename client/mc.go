@@ -3,7 +3,6 @@ package memcached
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -15,7 +14,7 @@ const bufsize = 1024
 
 // The Client itself.
 type Client struct {
-	conn net.Conn
+	conn io.ReadWriteCloser
 
 	hdrBuf []byte
 }
@@ -38,26 +37,26 @@ func (c *Client) Close() {
 }
 
 // Send a custom request and get the response.
-func (client *Client) Send(req *gomemcached.MCRequest) (rv gomemcached.MCResponse, err error) {
+func (client *Client) Send(req *gomemcached.MCRequest) (rv *gomemcached.MCResponse, err error) {
 	err = transmitRequest(client.conn, req)
 	if err != nil {
 		return
 	}
-	return client.getResponse()
+	return getResponse(client.conn, client.hdrBuf)
 }
 
 // Send a request, but do not wait for a response.
-func (client *Client) Transmit(req *gomemcached.MCRequest) {
-	transmitRequest(client.conn, req)
+func (client *Client) Transmit(req *gomemcached.MCRequest) error {
+	return transmitRequest(client.conn, req)
 }
 
 // Receive a response
-func (client *Client) Receive() (gomemcached.MCResponse, error) {
-	return client.getResponse()
+func (client *Client) Receive() (*gomemcached.MCResponse, error) {
+	return getResponse(client.conn, client.hdrBuf)
 }
 
 // Get the value for a key.
-func (client *Client) Get(vb uint16, key string) (gomemcached.MCResponse, error) {
+func (client *Client) Get(vb uint16, key string) (*gomemcached.MCResponse, error) {
 	return client.Send(&gomemcached.MCRequest{
 		Opcode:  gomemcached.GET,
 		VBucket: vb,
@@ -69,7 +68,7 @@ func (client *Client) Get(vb uint16, key string) (gomemcached.MCResponse, error)
 }
 
 // Delete a key.
-func (client *Client) Del(vb uint16, key string) (gomemcached.MCResponse, error) {
+func (client *Client) Del(vb uint16, key string) (*gomemcached.MCResponse, error) {
 	return client.Send(&gomemcached.MCRequest{
 		Opcode:  gomemcached.DELETE,
 		VBucket: vb,
@@ -81,7 +80,7 @@ func (client *Client) Del(vb uint16, key string) (gomemcached.MCResponse, error)
 }
 
 func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,
-	key string, flags int, exp int, body []byte) (gomemcached.MCResponse, error) {
+	key string, flags int, exp int, body []byte) (*gomemcached.MCResponse, error) {
 
 	req := &gomemcached.MCRequest{
 		Opcode:  opcode,
@@ -98,13 +97,13 @@ func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,
 
 // Add a value for a key (store if not exists).
 func (client *Client) Add(vb uint16, key string, flags int, exp int,
-	body []byte) (gomemcached.MCResponse, error) {
+	body []byte) (*gomemcached.MCResponse, error) {
 	return client.store(gomemcached.ADD, vb, key, flags, exp, body)
 }
 
 // Set the value for a key.
 func (client *Client) Set(vb uint16, key string, flags int, exp int,
-	body []byte) (gomemcached.MCResponse, error) {
+	body []byte) (*gomemcached.MCResponse, error) {
 	return client.store(gomemcached.SET, vb, key, flags, exp, body)
 }
 
@@ -135,7 +134,7 @@ func (client *Client) Stats(key string) ([]StatValue, error) {
 	}
 
 	for {
-		res, err := client.getResponse()
+		res, err := getResponse(client.conn, client.hdrBuf)
 		if err != nil {
 			return rv, err
 		}
@@ -165,55 +164,55 @@ func (client *Client) StatsMap(key string) (map[string]string, error) {
 	return rv, nil
 }
 
-func (client *Client) getResponse() (rv gomemcached.MCResponse, err error) {
-	_, err = io.ReadFull(client.conn, client.hdrBuf)
+func getResponse(s io.Reader, buf []byte) (rv *gomemcached.MCResponse, err error) {
+	_, err = io.ReadFull(s, buf)
 	if err != nil {
 		return rv, err
 	}
-	rv, err = grokHeader(client.hdrBuf)
+	rv, err = grokHeader(buf)
 	if err != nil {
 		return rv, err
 	}
-	err = readContents(client.conn, &rv)
+	err = readContents(s, rv)
 	return rv, err
 }
 
-func readContents(s net.Conn, res *gomemcached.MCResponse) error {
-	err := readOb(s, res.Extras)
-	if err != nil {
-		return err
+func readContents(s io.Reader, res *gomemcached.MCResponse) error {
+	if len(res.Extras) > 0 {
+		_, err := io.ReadFull(s, res.Extras)
+		if err != nil {
+			return err
+		}
 	}
-	err = readOb(s, res.Key)
-	if err != nil {
-		return err
+	if len(res.Key) > 0 {
+		_, err := io.ReadFull(s, res.Key)
+		if err != nil {
+			return err
+		}
 	}
-	return readOb(s, res.Body)
+	_, err := io.ReadFull(s, res.Body)
+	return err
 }
 
-func grokHeader(hdrBytes []byte) (rv gomemcached.MCResponse, err error) {
+func grokHeader(hdrBytes []byte) (rv *gomemcached.MCResponse, err error) {
 	if hdrBytes[0] != gomemcached.RES_MAGIC {
-		return rv, errors.New(fmt.Sprintf("Bad magic: 0x%02x", hdrBytes[0]))
+		return rv, fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
 	}
-	// rv.Opcode = hdrBytes[1]
-	rv.Key = make([]byte, binary.BigEndian.Uint16(hdrBytes[2:]))
-	rv.Extras = make([]byte, hdrBytes[4])
-	rv.Status = uint16(hdrBytes[7])
-	bodyLen := binary.BigEndian.Uint32(hdrBytes[8:]) - uint32(len(rv.Key)) - uint32(len(rv.Extras))
+	rv = &gomemcached.MCResponse{
+		Opcode: gomemcached.CommandCode(hdrBytes[1]),
+		Key:    make([]byte, binary.BigEndian.Uint16(hdrBytes[2:])),
+		Extras: make([]byte, hdrBytes[4]),
+		Status: binary.BigEndian.Uint16(hdrBytes[6:8]),
+		Opaque: binary.BigEndian.Uint32(hdrBytes[12:]),
+		Cas:    binary.BigEndian.Uint64(hdrBytes[16:]),
+	}
+	bodyLen := binary.BigEndian.Uint32(hdrBytes[8:]) -
+		uint32(len(rv.Key)-len(rv.Extras))
 	rv.Body = make([]byte, bodyLen)
-	// rv.Opaque = binary.BigEndian.Uint32(hdrBytes[12:])
-	rv.Cas = binary.BigEndian.Uint64(hdrBytes[16:])
 	return
 }
 
 func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
 	_, err = o.Write(req.Bytes())
 	return
-}
-
-func readOb(s net.Conn, buf []byte) error {
-	_, err := io.ReadFull(s, buf)
-	if err != nil {
-		return err
-	}
-	return nil
 }

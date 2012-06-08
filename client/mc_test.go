@@ -58,13 +58,13 @@ func BenchmarkTransmit(b *testing.B) {
 	bout := bytes.NewBuffer([]byte{})
 
 	req := gomemcached.MCRequest{
-		Opcode:          gomemcached.SET,
-		Cas:             938424885,
-		Opaque:          7242,
-		VBucket:         824,
-		Extras:          []byte{},
-		Key:             []byte("somekey"),
-		Body:            []byte("somevalue"),
+		Opcode:  gomemcached.SET,
+		Cas:     938424885,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
 	}
 
 	b.SetBytes(int64(req.Size()))
@@ -96,6 +96,64 @@ func BenchmarkTransmitNull(b *testing.B) {
 		err := transmitRequest(ioutil.Discard, &req)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
+		}
+	}
+}
+
+func TestDecode(t *testing.T) {
+	data := []byte{
+		gomemcached.RES_MAGIC, byte(gomemcached.SET),
+		0x0, 0x7, // length of key
+		0x0,       // extra length
+		0x0,       // reserved
+		0x6, 0x2e, // status
+		0x0, 0x0, 0x0, 0x10, // Length of value
+		0x0, 0x0, 0x1c, 0x4a, // opaque
+		0x0, 0x0, 0x0, 0x0, 0x37, 0xef, 0x3a, 0x35, // CAS
+		's', 'o', 'm', 'e', 'k', 'e', 'y',
+		's', 'o', 'm', 'e', 'v', 'a', 'l', 'u', 'e'}
+
+	buf := make([]byte, gomemcached.HDR_LEN)
+	res, err := getResponse(bytes.NewReader(data), buf)
+	if err != nil {
+		t.Fatalf("Error parsing response: %v", err)
+	}
+
+	expected := &gomemcached.MCResponse{
+		Opcode: gomemcached.SET,
+		Status: 1582,
+		Opaque: 7242,
+		Cas:    938424885,
+		Extras: []byte{},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+		Fatal:  false,
+	}
+
+	if !reflect.DeepEqual(res, expected) {
+		t.Fatalf("Expected\n%#v -- got --\n%#v", expected, res)
+	}
+}
+
+func BenchmarkDecodeResponse(b *testing.B) {
+	data := []byte{
+		gomemcached.RES_MAGIC, byte(gomemcached.SET),
+		0x0, 0x7, // length of key
+		0x0,       // extra length
+		0x0,       // reserved
+		0x6, 0x2e, // status
+		0x0, 0x0, 0x0, 0x10, // Length of value
+		0x0, 0x0, 0x1c, 0x4a, // opaque
+		0x0, 0x0, 0x0, 0x0, 0x37, 0xef, 0x3a, 0x35, // CAS
+		's', 'o', 'm', 'e', 'k', 'e', 'y',
+		's', 'o', 'm', 'e', 'v', 'a', 'l', 'u', 'e'}
+	buf := make([]byte, gomemcached.HDR_LEN)
+	b.SetBytes(int64(len(buf)))
+
+	for i := 0; i < b.N; i++ {
+		_, err := getResponse(bytes.NewReader(data), buf)
+		if err != nil {
+			b.Fatalf("Error decoding:  %v", err)
 		}
 	}
 }
