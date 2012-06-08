@@ -130,7 +130,7 @@ func (req *MCRequest) Bytes() []byte {
 	// 4
 	data[pos] = byte(len(req.Extras))
 	pos++
-	data[pos] = 0
+	// data[pos] = 0
 	pos++
 	binary.BigEndian.PutUint16(data[pos:pos+2], req.VBucket)
 	pos += 2
@@ -145,16 +145,24 @@ func (req *MCRequest) Bytes() []byte {
 	pos += 4
 
 	// 16
-	binary.BigEndian.PutUint64(data[pos:pos+8], req.Cas)
+	if req.Cas != 0 {
+		binary.BigEndian.PutUint64(data[pos:pos+8], req.Cas)
+	}
 	pos += 8
 
-	copy(data[pos:pos+len(req.Extras)], req.Extras)
-	pos += len(req.Extras)
+	if len(req.Extras) > 0 {
+		copy(data[pos:pos+len(req.Extras)], req.Extras)
+		pos += len(req.Extras)
+	}
 
-	copy(data[pos:pos+len(req.Key)], req.Key)
-	pos += len(req.Key)
+	if len(req.Key) > 0 {
+		copy(data[pos:pos+len(req.Key)], req.Key)
+		pos += len(req.Key)
+	}
 
-	copy(data[pos:pos+len(req.Body)], req.Body)
+	if len(req.Body) > 0 {
+		copy(data[pos:pos+len(req.Body)], req.Body)
+	}
 
 	return data
 }

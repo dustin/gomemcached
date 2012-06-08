@@ -71,6 +71,42 @@ func BenchmarkEncodingRequest(b *testing.B) {
 	}
 }
 
+func BenchmarkEncodingRequest0CAS(b *testing.B) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
+	}
+
+	b.SetBytes(int64(req.Size()))
+
+	for i := 0; i < b.N; i++ {
+		req.Bytes()
+	}
+}
+
+func BenchmarkEncodingRequest1Extra(b *testing.B) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{1},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
+	}
+
+	b.SetBytes(int64(req.Size()))
+
+	for i := 0; i < b.N; i++ {
+		req.Bytes()
+	}
+}
+
 func TestEncodingResponse(t *testing.T) {
 	req := MCResponse{
 		Opcode: SET,
