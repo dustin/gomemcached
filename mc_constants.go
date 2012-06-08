@@ -104,7 +104,7 @@ type MCRequest struct {
 	ResponseChannel   chan MCResponse
 }
 
-func (req MCRequest) Size() int {
+func (req *MCRequest) Size() int {
 	return 24 + len(req.Extras) + len(req.Key) + len(req.Body)
 }
 
@@ -158,7 +158,9 @@ func (req *MCRequest) Bytes() []byte {
 }
 
 type MCResponse struct {
+	Opcode            CommandCode
 	Status            uint16
+	Opaque            uint32
 	Cas               uint64
 	Extras, Key, Body []byte
 	Fatal             bool
@@ -172,6 +174,54 @@ func (res MCResponse) String() string {
 func (res MCResponse) Error() string {
 	return fmt.Sprintf("MCResponse status=%x, msg: %s",
 		res.Status, string(res.Body))
+}
+
+func (res *MCResponse) Size() int {
+	return 24 + len(res.Extras) + len(res.Key) + len(res.Body)
+}
+
+func (res *MCResponse) Bytes() []byte {
+	data := make([]byte, res.Size())
+
+	pos := 0
+	data[pos] = RES_MAGIC
+	pos++
+	data[pos] = byte(res.Opcode)
+	pos++
+	binary.BigEndian.PutUint16(data[pos:pos+2],
+		uint16(len(res.Key)))
+	pos += 2
+
+	// 4
+	data[pos] = byte(len(res.Extras))
+	pos++
+	data[pos] = 0
+	pos++
+	binary.BigEndian.PutUint16(data[pos:pos+2], res.Status)
+	pos += 2
+
+	// 8
+	binary.BigEndian.PutUint32(data[pos:pos+4],
+		uint32(len(res.Body)+len(res.Key)+len(res.Extras)))
+	pos += 4
+
+	// 12
+	binary.BigEndian.PutUint32(data[pos:pos+4], res.Opaque)
+	pos += 4
+
+	// 16
+	binary.BigEndian.PutUint64(data[pos:pos+8], res.Cas)
+	pos += 8
+
+	copy(data[pos:pos+len(res.Extras)], res.Extras)
+	pos += len(res.Extras)
+
+	copy(data[pos:pos+len(res.Key)], res.Key)
+	pos += len(res.Key)
+
+	copy(data[pos:pos+len(res.Body)], res.Body)
+
+	return data
 }
 
 type MCItem struct {
