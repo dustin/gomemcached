@@ -43,6 +43,11 @@ func TestTransmit(t *testing.T) {
 		's', 'o', 'm', 'e', 'k', 'e', 'y',
 		's', 'o', 'm', 'e', 'v', 'a', 'l', 'u', 'e'}
 
+	if len(b.Bytes()) != req.Size() {
+		t.Fatalf("Expected %v bytes, got %v", req.Size(),
+			len(b.Bytes()))
+	}
+
 	if !reflect.DeepEqual(b.Bytes(), expected) {
 		t.Fatalf("Expected:\n%#v\n  -- got -- \n%#v",
 			expected, b.Bytes())
@@ -63,7 +68,7 @@ func BenchmarkTransmit(b *testing.B) {
 		ResponseChannel: make(chan gomemcached.MCResponse),
 	}
 
-	b.SetBytes(40)
+	b.SetBytes(int64(req.Size()))
 
 	for i := 0; i < b.N; i++ {
 		bout.Reset()

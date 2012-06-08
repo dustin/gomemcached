@@ -210,69 +210,56 @@ func grokHeader(hdrBytes []byte) (rv gomemcached.MCResponse, err error) {
 	return
 }
 
-func transmitRequest(o *bufio.Writer, req *gomemcached.MCRequest) (err error) {
-	defer func() {
-		if x := recover(); x != nil {
-			err = x.(error)
-		}
-	}()
-	// 0
-	writeByte(o, gomemcached.REQ_MAGIC)
-	writeByte(o, byte(req.Opcode))
-	writeUint16(o, uint16(len(req.Key)))
+func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
+	data := make([]byte, req.Size())
+
+	pos := 0
+	data[pos] = gomemcached.REQ_MAGIC
+	pos++
+	data[pos] = byte(req.Opcode)
+	pos++
+	binary.BigEndian.PutUint16(data[pos:pos+2],
+		uint16(len(req.Key)))
+	pos += 2
+
 	// 4
-	writeByte(o, uint8(len(req.Extras)))
-	writeByte(o, 0)
-	writeUint16(o, req.VBucket)
+	data[pos] = byte(len(req.Extras))
+	pos++
+	data[pos] = 0
+	pos++
+	binary.BigEndian.PutUint16(data[pos:pos+2], req.VBucket)
+	pos += 2
+
 	// 8
-	writeUint32(o, uint32(len(req.Body))+
-		uint32(len(req.Key))+
-		uint32(len(req.Extras)))
+	binary.BigEndian.PutUint32(data[pos:pos+4],
+		uint32(len(req.Body)+len(req.Key)+len(req.Extras)))
+	pos += 4
+
 	// 12
-	writeUint32(o, req.Opaque)
+	binary.BigEndian.PutUint32(data[pos:pos+4], req.Opaque)
+	pos += 4
+
 	// 16
-	writeUint64(o, req.Cas)
-	// The rest
-	writeBytes(o, req.Extras)
-	writeBytes(o, req.Key)
-	writeBytes(o, req.Body)
-	o.Flush()
-	return nil
-}
+	binary.BigEndian.PutUint64(data[pos:pos+8], req.Cas)
+	pos += 8
 
-func writeBytes(s *bufio.Writer, data []byte) {
-	if len(data) > 0 {
-		_, err := s.Write(data)
-		if err != nil {
-			panic(err)
-		}
+	copy(data[pos:pos+len(req.Extras)], req.Extras)
+	pos += len(req.Extras)
+
+	copy(data[pos:pos+len(req.Key)], req.Key)
+	pos += len(req.Key)
+
+	copy(data[pos:pos+len(req.Body)], req.Body)
+	pos += len(req.Body)
+
+	n, err := o.Write(data)
+	if err != nil {
+		return err
 	}
-	return
-
-}
-
-func writeByte(s *bufio.Writer, b byte) {
-	data := make([]byte, 1)
-	data[0] = b
-	writeBytes(s, data)
-}
-
-func writeUint16(s *bufio.Writer, n uint16) {
-	data := []byte{0, 0}
-	binary.BigEndian.PutUint16(data, n)
-	writeBytes(s, data)
-}
-
-func writeUint32(s *bufio.Writer, n uint32) {
-	data := []byte{0, 0, 0, 0}
-	binary.BigEndian.PutUint32(data, n)
-	writeBytes(s, data)
-}
-
-func writeUint64(s *bufio.Writer, n uint64) {
-	data := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-	binary.BigEndian.PutUint64(data, n)
-	writeBytes(s, data)
+	if n != len(data) {
+		return errors.New("Invalid write")
+	}
+	return nil
 }
 
 func readOb(s net.Conn, buf []byte) error {

@@ -101,6 +101,10 @@ type MCRequest struct {
 	ResponseChannel   chan MCResponse
 }
 
+func (req MCRequest) Size() int {
+	return 24 + len(req.Extras) + len(req.Key) + len(req.Body)
+}
+
 func (req MCRequest) String() string {
 	return fmt.Sprintf("{MCRequest opcode=%s, bodylen=%d, key='%s'}",
 		req.Opcode, len(req.Body), req.Key)
