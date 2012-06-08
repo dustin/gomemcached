@@ -3,6 +3,7 @@ package memcached
 import (
 	"bufio"
 	"bytes"
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -72,8 +73,30 @@ func BenchmarkTransmit(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		bout.Reset()
-		buf := bufio.NewWriter(bout)
+		buf := bufio.NewWriterSize(bout, req.Size()*2)
 		err := transmitRequest(buf, &req)
+		if err != nil {
+			b.Fatalf("Error transmitting request: %v", err)
+		}
+	}
+}
+
+func BenchmarkTransmitNull(b *testing.B) {
+	req := gomemcached.MCRequest{
+		Opcode:          gomemcached.SET,
+		Cas:             938424885,
+		Opaque:          7242,
+		VBucket:         824,
+		Extras:          []byte{},
+		Key:             []byte("somekey"),
+		Body:            []byte("somevalue"),
+		ResponseChannel: make(chan gomemcached.MCResponse),
+	}
+
+	b.SetBytes(int64(req.Size()))
+
+	for i := 0; i < b.N; i++ {
+		err := transmitRequest(ioutil.Discard, &req)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
 		}
