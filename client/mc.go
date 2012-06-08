@@ -2,7 +2,6 @@
 package memcached
 
 import (
-	"bufio"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -16,8 +15,7 @@ const bufsize = 1024
 
 // The Client itself.
 type Client struct {
-	conn   net.Conn
-	writer *bufio.Writer
+	conn net.Conn
 
 	hdrBuf []byte
 }
@@ -30,7 +28,6 @@ func Connect(prot, dest string) (rv *Client, err error) {
 	}
 	return &Client{
 		conn:   conn,
-		writer: bufio.NewWriterSize(conn, bufsize),
 		hdrBuf: make([]byte, gomemcached.HDR_LEN),
 	}, nil
 }
@@ -42,7 +39,7 @@ func (c *Client) Close() {
 
 // Send a custom request and get the response.
 func (client *Client) Send(req *gomemcached.MCRequest) (rv gomemcached.MCResponse, err error) {
-	err = transmitRequest(client.writer, req)
+	err = transmitRequest(client.conn, req)
 	if err != nil {
 		return
 	}
@@ -51,7 +48,7 @@ func (client *Client) Send(req *gomemcached.MCRequest) (rv gomemcached.MCRespons
 
 // Send a request, but do not wait for a response.
 func (client *Client) Transmit(req *gomemcached.MCRequest) {
-	transmitRequest(client.writer, req)
+	transmitRequest(client.conn, req)
 }
 
 // Receive a response
@@ -134,7 +131,7 @@ func (client *Client) Stats(key string) ([]StatValue, error) {
 	req.Extras = []byte{}
 	req.Body = []byte{}
 
-	err := transmitRequest(client.writer, &req)
+	err := transmitRequest(client.conn, &req)
 	if err != nil {
 		return rv, err
 	}
