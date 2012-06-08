@@ -100,6 +100,81 @@ func BenchmarkTransmitNull(b *testing.B) {
 	}
 }
 
+/*
+       |0 1 2 3 4 5 6 7|0 1 2 3 4 5 6 7|0 1 2 3 4 5 6 7|0 1 2 3 4 5 6 7|
+       +---------------+---------------+---------------+---------------+
+      0| 0x81          | 0x00          | 0x00          | 0x00          |
+       +---------------+---------------+---------------+---------------+
+      4| 0x04          | 0x00          | 0x00          | 0x00          |
+       +---------------+---------------+---------------+---------------+
+      8| 0x00          | 0x00          | 0x00          | 0x09          |
+       +---------------+---------------+---------------+---------------+
+     12| 0x00          | 0x00          | 0x00          | 0x00          |
+       +---------------+---------------+---------------+---------------+
+     16| 0x00          | 0x00          | 0x00          | 0x00          |
+       +---------------+---------------+---------------+---------------+
+     20| 0x00          | 0x00          | 0x00          | 0x01          |
+       +---------------+---------------+---------------+---------------+
+     24| 0xde          | 0xad          | 0xbe          | 0xef          |
+       +---------------+---------------+---------------+---------------+
+     28| 0x57 ('W')    | 0x6f ('o')    | 0x72 ('r')    | 0x6c ('l')    |
+       +---------------+---------------+---------------+---------------+
+     32| 0x64 ('d')    |
+       +---------------+
+
+   Field        (offset) (value)
+   Magic        (0)    : 0x81
+   Opcode       (1)    : 0x00
+   Key length   (2,3)  : 0x0000
+   Extra length (4)    : 0x04
+   Data type    (5)    : 0x00
+   Status       (6,7)  : 0x0000
+   Total body   (8-11) : 0x00000009
+   Opaque       (12-15): 0x00000000
+   CAS          (16-23): 0x0000000000000001
+   Extras              :
+     Flags      (24-27): 0xdeadbeef
+   Key                 : None
+   Value        (28-32): The textual string "World"
+
+*/
+
+func TestDecodeSpecSample(t *testing.T) {
+	data := []byte{
+		0x81, 0x00, 0x00, 0x00, // 0
+		0x04, 0x00, 0x00, 0x00, // 4
+		0x00, 0x00, 0x00, 0x09, // 8
+		0x00, 0x00, 0x00, 0x00, // 12
+		0x00, 0x00, 0x00, 0x00, // 16
+		0x00, 0x00, 0x00, 0x01, // 20
+		0xde, 0xad, 0xbe, 0xef, // 24
+		0x57, 0x6f, 0x72, 0x6c, // 28
+		0x64, // 32
+	}
+
+	buf := make([]byte, gomemcached.HDR_LEN)
+	res, err := getResponse(bytes.NewReader(data), buf)
+	if err != nil {
+		t.Fatalf("Error parsing response: %v", err)
+	}
+
+	expected := &gomemcached.MCResponse{
+		Opcode: gomemcached.GET,
+		Status: 0,
+		Opaque: 0,
+		Cas:    1,
+		Extras: []byte{0xde, 0xad, 0xbe, 0xef},
+		Key:    []byte{},
+		Body:   []byte("World"),
+		Fatal:  false,
+	}
+
+	if !reflect.DeepEqual(res, expected) {
+		t.Fatalf("Expected\n%#v -- got --\n%#v", expected, res)
+	}
+
+}
+
 func TestDecode(t *testing.T) {
 	data := []byte{
 		gomemcached.RES_MAGIC, byte(gomemcached.SET),
