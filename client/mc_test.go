@@ -15,14 +15,13 @@ func TestTransmit(t *testing.T) {
 	buf := bufio.NewWriter(b)
 
 	req := gomemcached.MCRequest{
-		Opcode:          gomemcached.SET,
-		Cas:             938424885,
-		Opaque:          7242,
-		VBucket:         824,
-		Extras:          []byte{},
-		Key:             []byte("somekey"),
-		Body:            []byte("somevalue"),
-		ResponseChannel: make(chan gomemcached.MCResponse),
+		Opcode:  gomemcached.SET,
+		Cas:     938424885,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
 	}
 
 	err := transmitRequest(buf, &req)
@@ -66,7 +65,6 @@ func BenchmarkTransmit(b *testing.B) {
 		Extras:          []byte{},
 		Key:             []byte("somekey"),
 		Body:            []byte("somevalue"),
-		ResponseChannel: make(chan gomemcached.MCResponse),
 	}
 
 	b.SetBytes(int64(req.Size()))
@@ -83,14 +81,13 @@ func BenchmarkTransmit(b *testing.B) {
 
 func BenchmarkTransmitNull(b *testing.B) {
 	req := gomemcached.MCRequest{
-		Opcode:          gomemcached.SET,
-		Cas:             938424885,
-		Opaque:          7242,
-		VBucket:         824,
-		Extras:          []byte{},
-		Key:             []byte("somekey"),
-		Body:            []byte("somevalue"),
-		ResponseChannel: make(chan gomemcached.MCResponse),
+		Opcode:  gomemcached.SET,
+		Cas:     938424885,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
 	}
 
 	b.SetBytes(int64(req.Size()))

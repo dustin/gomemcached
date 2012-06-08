@@ -24,21 +24,33 @@ func (b BadMagic) Error() string {
 	return fmt.Sprintf("Bad magic:  0x%02x", b.was)
 }
 
-func HandleIO(s io.ReadWriteCloser, reqChannel chan gomemcached.MCRequest) {
+// Request handler for doing server stuff.
+type RequestHandler interface {
+	// Handle a message from the client.
+	// If the message should cause the connection to terminate,
+	// the Fatal flag should be set.  If the message requires no
+	// response, return nil
+	HandleMessage(*gomemcached.MCRequest) *gomemcached.MCResponse
+}
+
+func HandleIO(s io.ReadWriteCloser, handler RequestHandler) {
 	defer s.Close()
-	for handleMessage(s, s, reqChannel) {
+	for handleMessage(s, s, handler) {
 	}
 }
 
-func handleMessage(r io.Reader, w io.Writer, reqChannel chan gomemcached.MCRequest) (ret bool) {
+func handleMessage(r io.Reader, w io.Writer, handler RequestHandler) (ret bool) {
 	req, err := ReadPacket(r)
 	if err != nil {
 		return
 	}
 
-	req.ResponseChannel = make(chan gomemcached.MCResponse)
-	reqChannel <- req
-	res := <-req.ResponseChannel
+	res := handler.HandleMessage(&req)
+	if res == nil {
+		// Quiet command
+		return true
+	}
+
 	ret = !res.Fatal
 	if ret {
 		res.Opcode = req.Opcode
@@ -80,7 +92,7 @@ func readContents(s io.Reader, req *gomemcached.MCRequest) (err error) {
 	return readOb(s, req.Body)
 }
 
-func transmitResponse(s io.Writer, res gomemcached.MCResponse) error {
+func transmitResponse(s io.Writer, res *gomemcached.MCResponse) error {
 	_, err := s.Write(res.Bytes())
 	return err
 }

@@ -101,8 +101,6 @@ type MCRequest struct {
 	VBucket uint16
 	// Command extras, key, and body
 	Extras, Key, Body []byte
-	// A channel over which the response will be sent
-	ResponseChannel chan MCResponse
 }
 
 // The number of bytes this request requires.

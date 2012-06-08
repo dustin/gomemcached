@@ -19,14 +19,13 @@ func TestCommandCodeStringin(t *testing.T) {
 
 func TestEncodingRequest(t *testing.T) {
 	req := MCRequest{
-		Opcode:          SET,
-		Cas:             938424885,
-		Opaque:          7242,
-		VBucket:         824,
-		Extras:          []byte{},
-		Key:             []byte("somekey"),
-		Body:            []byte("somevalue"),
-		ResponseChannel: make(chan MCResponse),
+		Opcode:  SET,
+		Cas:     938424885,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
 	}
 
 	got := req.Bytes()
@@ -56,14 +55,13 @@ func TestEncodingRequest(t *testing.T) {
 
 func BenchmarkEncodingRequest(b *testing.B) {
 	req := MCRequest{
-		Opcode:          SET,
-		Cas:             938424885,
-		Opaque:          7242,
-		VBucket:         824,
-		Extras:          []byte{},
-		Key:             []byte("somekey"),
-		Body:            []byte("somevalue"),
-		ResponseChannel: make(chan MCResponse),
+		Opcode:  SET,
+		Cas:     938424885,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
 	}
 
 	b.SetBytes(int64(req.Size()))
