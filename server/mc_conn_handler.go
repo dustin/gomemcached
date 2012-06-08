@@ -2,7 +2,6 @@
 package memcached
 
 import (
-	"bufio"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -42,7 +41,9 @@ func handleMessage(r io.Reader, w io.Writer, reqChannel chan gomemcached.MCReque
 	res := <-req.ResponseChannel
 	ret = !res.Fatal
 	if ret {
-		transmitResponse(w, req, res)
+		res.Opcode = req.Opcode
+		res.Opaque = req.Opaque
+		transmitResponse(w, res)
 	}
 
 	return
@@ -79,61 +80,9 @@ func readContents(s io.Reader, req *gomemcached.MCRequest) (err error) {
 	return readOb(s, req.Body)
 }
 
-func transmitResponse(s io.Writer, req gomemcached.MCRequest, res gomemcached.MCResponse) {
-	o := bufio.NewWriter(s)
-	writeByte(o, gomemcached.RES_MAGIC)
-	writeByte(o, byte(req.Opcode))
-	writeUint16(o, uint16(len(res.Key)))
-	writeByte(o, uint8(len(res.Extras)))
-	writeByte(o, 0)
-	writeUint16(o, res.Status)
-	writeUint32(o, uint32(len(res.Body))+
-		uint32(len(res.Key))+
-		uint32(len(res.Extras)))
-	writeUint32(o, req.Opaque)
-	writeUint64(o, res.Cas)
-	writeBytes(o, res.Extras)
-	writeBytes(o, res.Key)
-	writeBytes(o, res.Body)
-	o.Flush()
-	return
-}
-
-func writeBytes(s *bufio.Writer, data []byte) error {
-	if len(data) > 0 {
-		written, err := s.Write(data)
-		if err != nil {
-			return err
-		}
-		if written != len(data) {
-			panic("Expected a full write, but didn't get one")
-		}
-	}
-	return nil
-}
-
-func writeByte(s *bufio.Writer, b byte) {
-	data := make([]byte, 1)
-	data[0] = b
-	writeBytes(s, data)
-}
-
-func writeUint16(s *bufio.Writer, n uint16) {
-	data := []byte{0, 0}
-	binary.BigEndian.PutUint16(data, n)
-	writeBytes(s, data)
-}
-
-func writeUint32(s *bufio.Writer, n uint32) {
-	data := []byte{0, 0, 0, 0}
-	binary.BigEndian.PutUint32(data, n)
-	writeBytes(s, data)
-}
-
-func writeUint64(s *bufio.Writer, n uint64) {
-	data := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-	binary.BigEndian.PutUint64(data, n)
-	writeBytes(s, data)
+func transmitResponse(s io.Writer, res gomemcached.MCResponse) error {
+	_, err := s.Write(res.Bytes())
+	return err
 }
 
 func readOb(s io.Reader, buf []byte) error {
