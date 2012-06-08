@@ -1,7 +1,10 @@
 // Memcached binary protocol packet formats and constants.
 package gomemcached
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+)
 
 type HeaderMagic int
 
@@ -108,6 +111,50 @@ func (req MCRequest) Size() int {
 func (req MCRequest) String() string {
 	return fmt.Sprintf("{MCRequest opcode=%s, bodylen=%d, key='%s'}",
 		req.Opcode, len(req.Body), req.Key)
+}
+
+func (req *MCRequest) Bytes() []byte {
+	data := make([]byte, req.Size())
+
+	pos := 0
+	data[pos] = REQ_MAGIC
+	pos++
+	data[pos] = byte(req.Opcode)
+	pos++
+	binary.BigEndian.PutUint16(data[pos:pos+2],
+		uint16(len(req.Key)))
+	pos += 2
+
+	// 4
+	data[pos] = byte(len(req.Extras))
+	pos++
+	data[pos] = 0
+	pos++
+	binary.BigEndian.PutUint16(data[pos:pos+2], req.VBucket)
+	pos += 2
+
+	// 8
+	binary.BigEndian.PutUint32(data[pos:pos+4],
+		uint32(len(req.Body)+len(req.Key)+len(req.Extras)))
+	pos += 4
+
+	// 12
+	binary.BigEndian.PutUint32(data[pos:pos+4], req.Opaque)
+	pos += 4
+
+	// 16
+	binary.BigEndian.PutUint64(data[pos:pos+8], req.Cas)
+	pos += 8
+
+	copy(data[pos:pos+len(req.Extras)], req.Extras)
+	pos += len(req.Extras)
+
+	copy(data[pos:pos+len(req.Key)], req.Key)
+	pos += len(req.Key)
+
+	copy(data[pos:pos+len(req.Body)], req.Body)
+
+	return data
 }
 
 type MCResponse struct {

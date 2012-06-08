@@ -208,55 +208,8 @@ func grokHeader(hdrBytes []byte) (rv gomemcached.MCResponse, err error) {
 }
 
 func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
-	data := make([]byte, req.Size())
-
-	pos := 0
-	data[pos] = gomemcached.REQ_MAGIC
-	pos++
-	data[pos] = byte(req.Opcode)
-	pos++
-	binary.BigEndian.PutUint16(data[pos:pos+2],
-		uint16(len(req.Key)))
-	pos += 2
-
-	// 4
-	data[pos] = byte(len(req.Extras))
-	pos++
-	data[pos] = 0
-	pos++
-	binary.BigEndian.PutUint16(data[pos:pos+2], req.VBucket)
-	pos += 2
-
-	// 8
-	binary.BigEndian.PutUint32(data[pos:pos+4],
-		uint32(len(req.Body)+len(req.Key)+len(req.Extras)))
-	pos += 4
-
-	// 12
-	binary.BigEndian.PutUint32(data[pos:pos+4], req.Opaque)
-	pos += 4
-
-	// 16
-	binary.BigEndian.PutUint64(data[pos:pos+8], req.Cas)
-	pos += 8
-
-	copy(data[pos:pos+len(req.Extras)], req.Extras)
-	pos += len(req.Extras)
-
-	copy(data[pos:pos+len(req.Key)], req.Key)
-	pos += len(req.Key)
-
-	copy(data[pos:pos+len(req.Body)], req.Body)
-	pos += len(req.Body)
-
-	n, err := o.Write(data)
-	if err != nil {
-		return err
-	}
-	if n != len(data) {
-		return errors.New("Invalid write")
-	}
-	return nil
+	_, err = o.Write(req.Bytes())
+	return
 }
 
 func readOb(s net.Conn, buf []byte) error {
