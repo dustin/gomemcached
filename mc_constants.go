@@ -65,17 +65,19 @@ const (
 	TAP_CHECKPOINT_END   = CommandCode(0x47)
 )
 
+type Status uint16
+
 const (
-	SUCCESS         = 0x00
-	KEY_ENOENT      = 0x01
-	KEY_EEXISTS     = 0x02
-	E2BIG           = 0x03
-	EINVAL          = 0x04
-	NOT_STORED      = 0x05
-	DELTA_BADVAL    = 0x06
-	NOT_MY_VBUCKET  = 0x07
-	UNKNOWN_COMMAND = 0x81
-	ENOMEM          = 0x82
+	SUCCESS         = Status(0x00)
+	KEY_ENOENT      = Status(0x01)
+	KEY_EEXISTS     = Status(0x02)
+	E2BIG           = Status(0x03)
+	EINVAL          = Status(0x04)
+	NOT_STORED      = Status(0x05)
+	DELTA_BADVAL    = Status(0x06)
+	NOT_MY_VBUCKET  = Status(0x07)
+	UNKNOWN_COMMAND = Status(0x81)
+	ENOMEM          = Status(0x82)
 )
 
 const (
@@ -172,7 +174,7 @@ type MCResponse struct {
 	// The command opcode of the command that sent the request
 	Opcode CommandCode
 	// The status of the response
-	Status uint16
+	Status Status
 	// The opaque sent in the request
 	Opaque uint32
 	// The CAS identifier (if applicable)
@@ -218,7 +220,7 @@ func (res *MCResponse) Bytes() []byte {
 	pos++
 	data[pos] = 0
 	pos++
-	binary.BigEndian.PutUint16(data[pos:pos+2], res.Status)
+	binary.BigEndian.PutUint16(data[pos:pos+2], uint16(res.Status))
 	pos += 2
 
 	// 8
@@ -257,6 +259,8 @@ const HDR_LEN = 24
 
 // Mapping of CommandCode -> name of command (not exhaustive)
 var CommandNames map[CommandCode]string
+
+var StatusNames map[Status]string
 
 func init() {
 	CommandNames = make(map[CommandCode]string)
@@ -309,6 +313,19 @@ func init() {
 	CommandNames[TAP_VBUCKET_SET] = "TAP_VBUCKET_SET"
 	CommandNames[TAP_CHECKPOINT_START] = "TAP_CHECKPOINT_START"
 	CommandNames[TAP_CHECKPOINT_END] = "TAP_CHECKPOINT_END"
+
+	StatusNames = make(map[Status]string)
+	StatusNames[SUCCESS] = "SUCCESS"
+	StatusNames[KEY_ENOENT] = "KEY_ENOENT"
+	StatusNames[KEY_EEXISTS] = "KEY_EEXISTS"
+	StatusNames[E2BIG] = "E2BIG"
+	StatusNames[EINVAL] = "EINVAL"
+	StatusNames[NOT_STORED] = "NOT_STORED"
+	StatusNames[DELTA_BADVAL] = "DELTA_BADVAL"
+	StatusNames[NOT_MY_VBUCKET] = "NOT_MY_VBUCKET"
+	StatusNames[UNKNOWN_COMMAND] = "UNKNOWN_COMMAND"
+	StatusNames[ENOMEM] = "ENOMEM"
+
 }
 
 // String an op code.
@@ -316,6 +333,15 @@ func (o CommandCode) String() (rv string) {
 	rv = CommandNames[o]
 	if rv == "" {
 		rv = fmt.Sprintf("0x%02x", int(o))
+	}
+	return rv
+}
+
+// String an op code.
+func (s Status) String() (rv string) {
+	rv = StatusNames[s]
+	if rv == "" {
+		rv = fmt.Sprintf("0x%02x", int(s))
 	}
 	return rv
 }

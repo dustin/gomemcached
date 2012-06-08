@@ -202,7 +202,7 @@ func grokHeader(hdrBytes []byte) (rv *gomemcached.MCResponse, err error) {
 		Opcode: gomemcached.CommandCode(hdrBytes[1]),
 		Key:    make([]byte, binary.BigEndian.Uint16(hdrBytes[2:4])),
 		Extras: make([]byte, hdrBytes[4]),
-		Status: binary.BigEndian.Uint16(hdrBytes[6:8]),
+		Status: gomemcached.Status(binary.BigEndian.Uint16(hdrBytes[6:8])),
 		Opaque: binary.BigEndian.Uint32(hdrBytes[12:16]),
 		Cas:    binary.BigEndian.Uint64(hdrBytes[16:24]),
 	}
