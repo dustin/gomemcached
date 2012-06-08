@@ -58,43 +58,42 @@ func (client *Client) Receive() (gomemcached.MCResponse, error) {
 
 // Get the value for a key.
 func (client *Client) Get(vb uint16, key string) (gomemcached.MCResponse, error) {
-	var req gomemcached.MCRequest
-	req.Opcode = gomemcached.GET
-	req.VBucket = vb
-	req.Key = []byte(key)
-	req.Cas = 0
-	req.Opaque = 0
-	req.Extras = []byte{}
-	req.Body = []byte{}
-	return client.Send(&req)
+	return client.Send(&gomemcached.MCRequest{
+		Opcode:  gomemcached.GET,
+		VBucket: vb,
+		Key:     []byte(key),
+		Cas:     0,
+		Opaque:  0,
+		Extras:  []byte{},
+		Body:    []byte{}})
 }
 
 // Delete a key.
 func (client *Client) Del(vb uint16, key string) (gomemcached.MCResponse, error) {
-	var req gomemcached.MCRequest
-	req.Opcode = gomemcached.DELETE
-	req.VBucket = vb
-	req.Key = []byte(key)
-	req.Cas = 0
-	req.Opaque = 0
-	req.Extras = []byte{}
-	req.Body = []byte{}
-	return client.Send(&req)
+	return client.Send(&gomemcached.MCRequest{
+		Opcode:  gomemcached.DELETE,
+		VBucket: vb,
+		Key:     []byte(key),
+		Cas:     0,
+		Opaque:  0,
+		Extras:  []byte{},
+		Body:    []byte{}})
 }
 
 func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,
 	key string, flags int, exp int, body []byte) (gomemcached.MCResponse, error) {
 
-	var req gomemcached.MCRequest
-	req.Opcode = opcode
-	req.VBucket = vb
-	req.Cas = 0
-	req.Opaque = 0
-	req.Key = []byte(key)
-	req.Extras = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	req := &gomemcached.MCRequest{
+		Opcode:  opcode,
+		VBucket: vb,
+		Key:     []byte(key),
+		Cas:     0,
+		Opaque:  0,
+		Extras:  []byte{0, 0, 0, 0, 0, 0, 0, 0},
+		Body:    body}
+
 	binary.BigEndian.PutUint64(req.Extras, uint64(flags)<<32|uint64(exp))
-	req.Body = body
-	return client.Send(&req)
+	return client.Send(req)
 }
 
 // Add a value for a key (store if not exists).
@@ -120,18 +119,17 @@ type StatValue struct {
 // Get stats from the server
 // use "" as the stat key for toplevel stats.
 func (client *Client) Stats(key string) ([]StatValue, error) {
-	rv := []StatValue{}
+	rv := make([]StatValue, 0, 128)
 
-	var req gomemcached.MCRequest
-	req.Opcode = gomemcached.STAT
-	req.VBucket = 0
-	req.Cas = 0
-	req.Opaque = 918494
-	req.Key = []byte(key)
-	req.Extras = []byte{}
-	req.Body = []byte{}
+	req := &gomemcached.MCRequest{
+		Opcode:  gomemcached.STAT,
+		VBucket: 0,
+		Key:     []byte(key),
+		Cas:     0,
+		Opaque:  918494,
+		Extras:  []byte{}}
 
-	err := transmitRequest(client.conn, &req)
+	err := transmitRequest(client.conn, req)
 	if err != nil {
 		return rv, err
 	}
