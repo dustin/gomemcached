@@ -6,8 +6,6 @@ import (
 	"fmt"
 )
 
-type HeaderMagic int
-
 const (
 	REQ_MAGIC = 0x80
 	RES_MAGIC = 0x81
@@ -67,8 +65,6 @@ const (
 	TAP_CHECKPOINT_END   = CommandCode(0x47)
 )
 
-type ResponseStatus int
-
 const (
 	SUCCESS         = 0x00
 	KEY_ENOENT      = 0x01
@@ -82,8 +78,6 @@ const (
 	ENOMEM          = 0x82
 )
 
-type TapFlags uint32
-
 const (
 	BACKFILL          = 0x01
 	DUMP              = 0x02
@@ -95,24 +89,34 @@ const (
 	REGISTERED_CLIENT = 0x80
 )
 
+// A Memcached Request
 type MCRequest struct {
-	Opcode            CommandCode
-	Cas               uint64
-	Opaque            uint32
-	VBucket           uint16
+	// The command being issued
+	Opcode CommandCode
+	// The CAS (if applicable, or 0)
+	Cas uint64
+	// An opaque value to be returned with this request
+	Opaque uint32
+	// The vbucket to which this command belongs
+	VBucket uint16
+	// Command extras, key, and body
 	Extras, Key, Body []byte
-	ResponseChannel   chan MCResponse
+	// A channel over which the response will be sent
+	ResponseChannel chan MCResponse
 }
 
+// The number of bytes this request requires.
 func (req *MCRequest) Size() int {
-	return 24 + len(req.Extras) + len(req.Key) + len(req.Body)
+	return HDR_LEN + len(req.Extras) + len(req.Key) + len(req.Body)
 }
 
+// A debugging string representation of this request
 func (req MCRequest) String() string {
 	return fmt.Sprintf("{MCRequest opcode=%s, bodylen=%d, key='%s'}",
 		req.Opcode, len(req.Body), req.Key)
 }
 
+// The wire representation of this request.
 func (req *MCRequest) Bytes() []byte {
 	data := make([]byte, req.Size())
 
@@ -157,29 +161,40 @@ func (req *MCRequest) Bytes() []byte {
 	return data
 }
 
+// A memcached response
 type MCResponse struct {
-	Opcode            CommandCode
-	Status            uint16
-	Opaque            uint32
-	Cas               uint64
+	// The command opcode of the command that sent the request
+	Opcode CommandCode
+	// The status of the response
+	Status uint16
+	// The opaque sent in the request
+	Opaque uint32
+	// The CAS identifier (if applicable)
+	Cas uint64
+	// Extras, key, and body for this response
 	Extras, Key, Body []byte
-	Fatal             bool
+	// If true, this represents a fatal condition and we should hang up
+	Fatal bool
 }
 
+// A debugging string representation of this response
 func (res MCResponse) String() string {
 	return fmt.Sprintf("{MCResponse status=%x keylen=%d, extralen=%d, bodylen=%d}",
 		res.Status, len(res.Key), len(res.Extras), len(res.Body))
 }
 
+// Response as an error.
 func (res MCResponse) Error() string {
 	return fmt.Sprintf("MCResponse status=%x, msg: %s",
 		res.Status, string(res.Body))
 }
 
+// Number of bytes this response consumes on the wire.
 func (res *MCResponse) Size() int {
-	return 24 + len(res.Extras) + len(res.Key) + len(res.Body)
+	return HDR_LEN + len(res.Extras) + len(res.Key) + len(res.Body)
 }
 
+// The actual bytes transmitted for this response.
 func (res *MCResponse) Bytes() []byte {
 	data := make([]byte, res.Size())
 
@@ -224,12 +239,14 @@ func (res *MCResponse) Bytes() []byte {
 	return data
 }
 
+// An internal representation of an item.
 type MCItem struct {
 	Cas               uint64
 	Flags, Expiration uint32
 	Data              []byte
 }
 
+// Number of bytes in a binary protocol header.
 const HDR_LEN = 24
 
 // Mapping of CommandCode -> name of command (not exhaustive)
@@ -288,6 +305,7 @@ func init() {
 	CommandNames[TAP_CHECKPOINT_END] = "TAP_CHECKPOINT_END"
 }
 
+// String an op code.
 func (o CommandCode) String() (rv string) {
 	rv = CommandNames[o]
 	if rv == "" {
