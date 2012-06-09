@@ -92,9 +92,22 @@ func readContents(s io.Reader, req *gomemcached.MCRequest) (err error) {
 	return readOb(s, req.Body)
 }
 
-func transmitResponse(s io.Writer, res *gomemcached.MCResponse) error {
-	_, err := s.Write(res.Bytes())
-	return err
+func transmitResponse(o io.Writer, res *gomemcached.MCResponse) (err error) {
+	if res.Size() < 128 {
+		_, err = o.Write(res.Bytes())
+	} else {
+		_, err = o.Write(res.HeaderBytes())
+		if err == nil && len(res.Extras) > 0 {
+			_, err = o.Write(res.Extras)
+		}
+		if err == nil && len(res.Key) > 0 {
+			_, err = o.Write(res.Key)
+		}
+		if err == nil && len(res.Body) > 0 {
+			_, err = o.Write(res.Body)
+		}
+	}
+	return
 }
 
 func readOb(s io.Reader, buf []byte) error {

@@ -79,6 +79,33 @@ func BenchmarkTransmit(b *testing.B) {
 	}
 }
 
+func BenchmarkTransmitLarge(b *testing.B) {
+	bout := bytes.NewBuffer([]byte{})
+
+	data := make([]byte, 24*1024)
+
+	req := gomemcached.MCRequest{
+		Opcode:  gomemcached.SET,
+		Cas:     938424885,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{},
+		Key:     []byte("somekey"),
+		Body:    data,
+	}
+
+	b.SetBytes(int64(req.Size()))
+
+	for i := 0; i < b.N; i++ {
+		bout.Reset()
+		buf := bufio.NewWriterSize(bout, req.Size()*2)
+		err := transmitRequest(buf, &req)
+		if err != nil {
+			b.Fatalf("Error transmitting request: %v", err)
+		}
+	}
+}
+
 func BenchmarkTransmitNull(b *testing.B) {
 	req := gomemcached.MCRequest{
 		Opcode:  gomemcached.SET,

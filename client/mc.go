@@ -214,6 +214,19 @@ func grokHeader(hdrBytes []byte) (rv *gomemcached.MCResponse, err error) {
 }
 
 func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
-	_, err = o.Write(req.Bytes())
+	if req.Size() < 128 {
+		_, err = o.Write(req.Bytes())
+	} else {
+		_, err = o.Write(req.HeaderBytes())
+		if err == nil && len(req.Extras) > 0 {
+			_, err = o.Write(req.Extras)
+		}
+		if err == nil && len(req.Key) > 0 {
+			_, err = o.Write(req.Key)
+		}
+		if err == nil && len(req.Body) > 0 {
+			_, err = o.Write(req.Body)
+		}
+	}
 	return
 }

@@ -171,3 +171,21 @@ func BenchmarkEncodingResponse(b *testing.B) {
 		req.Bytes()
 	}
 }
+
+func BenchmarkEncodingResponseLarge(b *testing.B) {
+	req := MCResponse{
+		Opcode: SET,
+		Status: 1582,
+		Opaque: 7242,
+		Cas:    938424885,
+		Extras: []byte{},
+		Key:    []byte("somekey"),
+		Body:   make([]byte, 24*1024),
+	}
+
+	b.SetBytes(int64(req.Size()))
+
+	for i := 0; i < b.N; i++ {
+		req.Bytes()
+	}
+}

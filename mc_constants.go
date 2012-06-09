@@ -116,9 +116,7 @@ func (req MCRequest) String() string {
 		req.Opcode, len(req.Body), req.Key)
 }
 
-// The wire representation of this request.
-func (req *MCRequest) Bytes() []byte {
-	data := make([]byte, req.Size())
+func (req *MCRequest) fillHeaderBytes(data []byte) {
 
 	pos := 0
 	data[pos] = REQ_MAGIC
@@ -150,7 +148,24 @@ func (req *MCRequest) Bytes() []byte {
 	if req.Cas != 0 {
 		binary.BigEndian.PutUint64(data[pos:pos+8], req.Cas)
 	}
-	pos += 8
+
+}
+
+// The wire representation of the header.
+func (req *MCRequest) HeaderBytes() []byte {
+	data := make([]byte, HDR_LEN)
+
+	req.fillHeaderBytes(data)
+
+	return data
+}
+
+// The wire representation of this request.
+func (req *MCRequest) Bytes() []byte {
+	data := make([]byte, req.Size())
+
+	req.fillHeaderBytes(data)
+	pos := HDR_LEN
 
 	if len(req.Extras) > 0 {
 		copy(data[pos:pos+len(req.Extras)], req.Extras)
@@ -202,10 +217,7 @@ func (res *MCResponse) Size() int {
 	return HDR_LEN + len(res.Extras) + len(res.Key) + len(res.Body)
 }
 
-// The actual bytes transmitted for this response.
-func (res *MCResponse) Bytes() []byte {
-	data := make([]byte, res.Size())
-
+func (res *MCResponse) fillHeaderBytes(data []byte) {
 	pos := 0
 	data[pos] = RES_MAGIC
 	pos++
@@ -234,8 +246,24 @@ func (res *MCResponse) Bytes() []byte {
 
 	// 16
 	binary.BigEndian.PutUint64(data[pos:pos+8], res.Cas)
-	pos += 8
+}
 
+// Get just the header bytes for this response.
+func (res *MCResponse) HeaderBytes() []byte {
+	data := make([]byte, HDR_LEN)
+
+	res.fillHeaderBytes(data)
+
+	return data
+}
+
+// The actual bytes transmitted for this response.
+func (res *MCResponse) Bytes() []byte {
+	data := make([]byte, res.Size())
+
+	res.fillHeaderBytes(data)
+
+	pos := HDR_LEN
 	copy(data[pos:pos+len(res.Extras)], res.Extras)
 	pos += len(res.Extras)
 
