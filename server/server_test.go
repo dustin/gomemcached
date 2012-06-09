@@ -82,8 +82,6 @@ func BenchmarkTransmitRes(b *testing.B) {
 func BenchmarkTransmitResLarge(b *testing.B) {
 	bout := bytes.NewBuffer([]byte{})
 
-	data := make([]byte, 24*1024)
-
 	res := gomemcached.MCResponse{
 		Opcode: gomemcached.SET,
 		Cas:    938424885,
@@ -91,7 +89,7 @@ func BenchmarkTransmitResLarge(b *testing.B) {
 		Status: 824,
 		Extras: []byte{},
 		Key:    []byte("somekey"),
-		Body:   data,
+		Body:   make([]byte, 24*1024),
 	}
 
 	b.SetBytes(int64(res.Size()))

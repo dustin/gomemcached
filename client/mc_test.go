@@ -10,7 +10,7 @@ import (
 	"github.com/dustin/gomemcached"
 )
 
-func TestTransmit(t *testing.T) {
+func TestTransmitReq(t *testing.T) {
 	b := bytes.NewBuffer([]byte{})
 	buf := bufio.NewWriter(b)
 
@@ -54,7 +54,7 @@ func TestTransmit(t *testing.T) {
 	}
 }
 
-func BenchmarkTransmit(b *testing.B) {
+func BenchmarkTransmitReq(b *testing.B) {
 	bout := bytes.NewBuffer([]byte{})
 
 	req := gomemcached.MCRequest{
@@ -79,10 +79,8 @@ func BenchmarkTransmit(b *testing.B) {
 	}
 }
 
-func BenchmarkTransmitLarge(b *testing.B) {
+func BenchmarkTransmitReqLarge(b *testing.B) {
 	bout := bytes.NewBuffer([]byte{})
-
-	data := make([]byte, 24*1024)
 
 	req := gomemcached.MCRequest{
 		Opcode:  gomemcached.SET,
@@ -91,7 +89,7 @@ func BenchmarkTransmitLarge(b *testing.B) {
 		VBucket: 824,
 		Extras:  []byte{},
 		Key:     []byte("somekey"),
-		Body:    data,
+		Body:    make([]byte, 24*1024),
 	}
 
 	b.SetBytes(int64(req.Size()))
@@ -106,7 +104,7 @@ func BenchmarkTransmitLarge(b *testing.B) {
 	}
 }
 
-func BenchmarkTransmitNull(b *testing.B) {
+func BenchmarkTransmitReqNull(b *testing.B) {
 	req := gomemcached.MCRequest{
 		Opcode:  gomemcached.SET,
 		Cas:     938424885,
