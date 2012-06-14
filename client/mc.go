@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 
 	"github.com/dustin/gomemcached"
 )
@@ -123,6 +124,62 @@ func (client *Client) Add(vb uint16, key string, flags int, exp int,
 func (client *Client) Set(vb uint16, key string, flags int, exp int,
 	body []byte) (*gomemcached.MCResponse, error) {
 	return client.store(gomemcached.SET, vb, key, flags, exp, body)
+}
+
+// Get keys in bulk
+func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCResponse, error) {
+	terminalOpaque := uint32(len(keys) + 5)
+	rv := map[string]*gomemcached.MCResponse{}
+	wg := sync.WaitGroup{}
+	going := true
+
+	defer func() {
+		going = false
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for going {
+			res, err := client.Receive()
+			if err != nil {
+				return
+			}
+			if res.Opaque == terminalOpaque {
+				return
+			}
+			rv[keys[res.Opaque]] = res
+		}
+	}()
+
+	for i, k := range keys {
+		err := client.Transmit(&gomemcached.MCRequest{
+			Opcode:  gomemcached.GETQ,
+			VBucket: vb,
+			Key:     []byte(k),
+			Cas:     0,
+			Opaque:  uint32(i),
+			Extras:  []byte{},
+			Body:    []byte{}})
+		if err != nil {
+			return rv, err
+		}
+	}
+
+	err := client.Transmit(&gomemcached.MCRequest{
+		Opcode: gomemcached.NOOP,
+		Key:    []byte{},
+		Cas:    0,
+		Extras: []byte{},
+		Body:   []byte{},
+		Opaque: terminalOpaque})
+	if err != nil {
+		return rv, err
+	}
+
+	wg.Wait()
+
+	return rv, nil
 }
 
 // Stats returns a slice of these.
