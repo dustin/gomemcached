@@ -193,6 +193,54 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 	return rv, nil
 }
 
+// A function to perform a CAS transform
+type CasFunc func(current []byte) []byte
+
+// Perform a CAS transform with the given function.
+//
+// If the value does not exist, an empty byte string will be sent to f
+func (client *Client) CAS(vb uint16, k string, f CasFunc,
+	initexp int) (rv *gomemcached.MCResponse, err error) {
+
+	flags := 0
+	exp := 0
+
+	for {
+		orig, err := client.Get(vb, k)
+		if err != nil && orig != nil && orig.Status != gomemcached.KEY_ENOENT {
+			return rv, err
+		}
+
+		if orig.Status == gomemcached.KEY_ENOENT {
+			init := f([]byte{})
+			// If it doesn't exist, add it
+			resp, err := client.Add(vb, k, 0, initexp, init)
+			if err == nil && resp.Status != gomemcached.KEY_EEXISTS {
+				return rv, err
+			}
+			// Copy the body into this response.
+			resp.Body = init
+			return resp, err
+		} else {
+			req := &gomemcached.MCRequest{
+				Opcode:  gomemcached.SET,
+				VBucket: vb,
+				Key:     []byte(k),
+				Cas:     orig.Cas,
+				Opaque:  0,
+				Extras:  []byte{0, 0, 0, 0, 0, 0, 0, 0},
+				Body:    f(orig.Body)}
+
+			binary.BigEndian.PutUint64(req.Extras, uint64(flags)<<32|uint64(exp))
+			resp, err := client.Send(req)
+			if err == nil {
+				return resp, nil
+			}
+		}
+	}
+	panic("Unreachable")
+}
+
 // Stats returns a slice of these.
 type StatValue struct {
 	// The stat key
