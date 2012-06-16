@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"sync"
 
@@ -153,6 +154,10 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 			}
 			if res.Opaque == terminalOpaque {
 				return
+			}
+			if res.Opcode != gomemcached.GETQ {
+				log.Panicf("Unexpected opcode in GETQ response: %+v",
+					res)
 			}
 			rv[keys[res.Opaque]] = res
 		}
