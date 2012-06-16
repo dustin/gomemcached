@@ -202,13 +202,13 @@ type MCResponse struct {
 
 // A debugging string representation of this response
 func (res MCResponse) String() string {
-	return fmt.Sprintf("{MCResponse status=%x keylen=%d, extralen=%d, bodylen=%d}",
+	return fmt.Sprintf("{MCResponse status=%v keylen=%d, extralen=%d, bodylen=%d}",
 		res.Status, len(res.Key), len(res.Extras), len(res.Body))
 }
 
 // Response as an error.
 func (res MCResponse) Error() string {
-	return fmt.Sprintf("MCResponse status=%x, msg: %s",
+	return fmt.Sprintf("MCResponse status=%v, msg: %s",
 		res.Status, string(res.Body))
 }
 
