@@ -98,7 +98,7 @@ func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,
 
 // Increment a value.
 func (client *Client) Incr(vb uint16, key string,
-	amt, def uint64, exp int) (*gomemcached.MCResponse, error) {
+	amt, def uint64, exp int) (uint64, error) {
 
 	req := &gomemcached.MCRequest{
 		Opcode:  gomemcached.INCREMENT,
@@ -111,7 +111,13 @@ func (client *Client) Incr(vb uint16, key string,
 	binary.BigEndian.PutUint64(req.Extras[:8], amt)
 	binary.BigEndian.PutUint64(req.Extras[8:16], def)
 	binary.BigEndian.PutUint32(req.Extras[16:20], uint32(exp))
-	return client.Send(req)
+
+	resp, err := client.Send(req)
+	if err != nil {
+		return 0, err
+	}
+
+	return binary.BigEndian.Uint64(resp.Body), nil
 }
 
 // Add a value for a key (store if not exists).
