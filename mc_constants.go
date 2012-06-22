@@ -77,6 +77,7 @@ const (
 	NOT_MY_VBUCKET  = Status(0x07)
 	UNKNOWN_COMMAND = Status(0x81)
 	ENOMEM          = Status(0x82)
+	TMPFAIL         = Status(0x86)
 )
 
 const (
@@ -168,6 +169,7 @@ func init() {
 	StatusNames[NOT_MY_VBUCKET] = "NOT_MY_VBUCKET"
 	StatusNames[UNKNOWN_COMMAND] = "UNKNOWN_COMMAND"
 	StatusNames[ENOMEM] = "ENOMEM"
+	StatusNames[TMPFAIL] = "TMPFAIL"
 
 }
 
