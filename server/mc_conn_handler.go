@@ -24,6 +24,12 @@ func (b BadMagic) Error() string {
 	return fmt.Sprintf("Bad magic:  0x%02x", b.was)
 }
 
+type funcHandler func(*gomemcached.MCRequest) *gomemcached.MCResponse
+
+func (fh funcHandler) HandleMessage(msg *gomemcached.MCRequest) *gomemcached.MCResponse {
+	return fh(msg)
+}
+
 // Request handler for doing server stuff.
 type RequestHandler interface {
 	// Handle a message from the client.
@@ -31,6 +37,11 @@ type RequestHandler interface {
 	// the Fatal flag should be set.  If the message requires no
 	// response, return nil
 	HandleMessage(*gomemcached.MCRequest) *gomemcached.MCResponse
+}
+
+// Convert a request handler function as a RequestHandler.
+func FuncHandler(f func(*gomemcached.MCRequest) *gomemcached.MCResponse) RequestHandler {
+	return funcHandler(f)
 }
 
 func HandleIO(s io.ReadWriteCloser, handler RequestHandler) {
