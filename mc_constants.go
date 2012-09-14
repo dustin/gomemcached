@@ -153,6 +153,10 @@ func init() {
 	CommandNames[RDECR] = "RDECR"
 	CommandNames[RDECRQ] = "RDECRQ"
 
+	CommandNames[SASL_LIST_MECHS] = "SASL_LIST_MECHS"
+	CommandNames[SASL_AUTH] = "SASL_AUTH"
+	CommandNames[SASL_STEP] = "SASL_STEP"
+
 	CommandNames[TAP_CONNECT] = "TAP_CONNECT"
 	CommandNames[TAP_MUTATION] = "TAP_MUTATION"
 	CommandNames[TAP_DELETE] = "TAP_DELETE"
