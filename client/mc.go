@@ -3,9 +3,11 @@ package memcached
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/dustin/gomemcached"
@@ -78,6 +80,39 @@ func (client *Client) Del(vb uint16, key string) (*gomemcached.MCResponse, error
 		Opaque:  0,
 		Extras:  []byte{},
 		Body:    []byte{}})
+}
+
+// List auth mechanisms
+func (client *Client) AuthList() (*gomemcached.MCResponse, error) {
+	return client.Send(&gomemcached.MCRequest{
+		Opcode:  gomemcached.SASL_LIST_MECHS,
+		VBucket: 0,
+		Key:     []byte{},
+		Cas:     0,
+		Opaque:  0,
+		Extras:  []byte{},
+		Body:    []byte{}})
+}
+
+func (client *Client) Auth(user, pass string) (*gomemcached.MCResponse, error) {
+	res, err := client.AuthList()
+
+	if err != nil {
+		return res, err
+	}
+
+	authMech := string(res.Body)
+	if strings.Index(authMech, "PLAIN") != -1 {
+		return client.Send(&gomemcached.MCRequest{
+			Opcode:  gomemcached.SASL_AUTH,
+			VBucket: 0,
+			Key:     []byte("PLAIN"),
+			Cas:     0,
+			Opaque:  0,
+			Extras:  []byte{},
+			Body:    []byte(fmt.Sprintf("\x00%s\x00%s", user, pass))})
+	}
+	return res, fmt.Errorf("Auth mechanism PLAIN not supported")
 }
 
 func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,

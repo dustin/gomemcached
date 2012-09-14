@@ -54,6 +54,10 @@ const (
 	RDECR      = CommandCode(0x3b)
 	RDECRQ     = CommandCode(0x3c)
 
+	SASL_LIST_MECHS = CommandCode(0x20)
+	SASL_AUTH       = CommandCode(0x21)
+	SASL_STEP       = CommandCode(0x22)
+
 	TAP_CONNECT          = CommandCode(0x40)
 	TAP_MUTATION         = CommandCode(0x41)
 	TAP_DELETE           = CommandCode(0x42)
