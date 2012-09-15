@@ -241,7 +241,7 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 
 	for {
 		orig, err := client.Get(vb, k)
-		if err != nil && orig != nil && orig.Status != gomemcached.KEY_ENOENT {
+		if err != nil && (orig == nil || orig.Status != gomemcached.KEY_ENOENT) {
 			return rv, err
 		}
 
