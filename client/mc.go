@@ -17,7 +17,8 @@ const bufsize = 1024
 
 // The Client itself.
 type Client struct {
-	conn io.ReadWriteCloser
+	conn    io.ReadWriteCloser
+	healthy bool
 
 	hdrBuf []byte
 }
@@ -29,8 +30,9 @@ func Connect(prot, dest string) (rv *Client, err error) {
 		return nil, err
 	}
 	return &Client{
-		conn:   conn,
-		hdrBuf: make([]byte, gomemcached.HDR_LEN),
+		conn:    conn,
+		healthy: true,
+		hdrBuf:  make([]byte, gomemcached.HDR_LEN),
 	}, nil
 }
 
@@ -39,23 +41,44 @@ func (c *Client) Close() {
 	c.conn.Close()
 }
 
+// Return false if this client has had issues communicating.
+//
+// This is useful for connection pools where we want to
+// non-destructively determine that a connection may be reused.
+func (c Client) IsHealthy() bool {
+	return c.healthy
+}
+
 // Send a custom request and get the response.
 func (client *Client) Send(req *gomemcached.MCRequest) (rv *gomemcached.MCResponse, err error) {
 	err = transmitRequest(client.conn, req)
 	if err != nil {
+		client.healthy = false
 		return
 	}
-	return getResponse(client.conn, client.hdrBuf)
+	resp, err := getResponse(client.conn, client.hdrBuf)
+	if err != nil {
+		client.healthy = false
+	}
+	return resp, err
 }
 
 // Send a request, but do not wait for a response.
 func (client *Client) Transmit(req *gomemcached.MCRequest) error {
-	return transmitRequest(client.conn, req)
+	err := transmitRequest(client.conn, req)
+	if err != nil {
+		client.healthy = false
+	}
+	return err
 }
 
 // Receive a response
 func (client *Client) Receive() (*gomemcached.MCResponse, error) {
-	return getResponse(client.conn, client.hdrBuf)
+	resp, err := getResponse(client.conn, client.hdrBuf)
+	if err != nil {
+		client.healthy = false
+	}
+	return resp, err
 }
 
 // Get the value for a key.
