@@ -303,9 +303,6 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 			if err == nil && resp.Status != gomemcached.KEY_EEXISTS {
 				return rv, err
 			}
-			// Copy the body into this response.
-			resp.Body = init
-			return resp, err
 		} else {
 			var req *gomemcached.MCRequest
 			newValue, operation := f(orig.Body)
