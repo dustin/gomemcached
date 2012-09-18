@@ -250,8 +250,33 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 	return rv, nil
 }
 
+// Operation to perform on this CAS loop.
+type CasOp uint8
+
+const (
+	// Store the new value normally
+	CASStore = CasOp(iota)
+	// Stop attempting to CAS, leave value untouched
+	CASQuit
+	// Delete the current value
+	CASDelete
+)
+
+// User specified termination is returned as an error.
+func (c CasOp) Error() string {
+	switch c {
+	case CASStore:
+		return "CAS store"
+	case CASQuit:
+		return "CAS quit"
+	case CASDelete:
+		return "CAS delete"
+	}
+	panic("Unhandled value")
+}
+
 // A function to perform a CAS transform
-type CasFunc func(current []byte) []byte
+type CasFunc func(current []byte) ([]byte, CasOp)
 
 // Perform a CAS transform with the given function.
 //
@@ -269,7 +294,10 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 		}
 
 		if orig.Status == gomemcached.KEY_ENOENT {
-			init := f([]byte{})
+			init, operation := f([]byte{})
+			if operation == CASQuit || operation == CASDelete {
+				return nil, operation
+			}
 			// If it doesn't exist, add it
 			resp, err := client.Add(vb, k, 0, initexp, init)
 			if err == nil && resp.Status != gomemcached.KEY_EEXISTS {
@@ -279,16 +307,31 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 			resp.Body = init
 			return resp, err
 		} else {
-			req := &gomemcached.MCRequest{
-				Opcode:  gomemcached.SET,
-				VBucket: vb,
-				Key:     []byte(k),
-				Cas:     orig.Cas,
-				Opaque:  0,
-				Extras:  []byte{0, 0, 0, 0, 0, 0, 0, 0},
-				Body:    f(orig.Body)}
+			var req *gomemcached.MCRequest
+			newValue, operation := f(orig.Body)
 
-			binary.BigEndian.PutUint64(req.Extras, uint64(flags)<<32|uint64(exp))
+			switch operation {
+			case CASQuit:
+				return nil, operation
+			case CASStore:
+				req = &gomemcached.MCRequest{
+					Opcode:  gomemcached.SET,
+					VBucket: vb,
+					Key:     []byte(k),
+					Cas:     orig.Cas,
+					Opaque:  0,
+					Extras:  []byte{0, 0, 0, 0, 0, 0, 0, 0},
+					Body:    newValue}
+
+				binary.BigEndian.PutUint64(req.Extras,
+					uint64(flags)<<32|uint64(exp))
+			case CASDelete:
+				req = &gomemcached.MCRequest{
+					Opcode:  gomemcached.DELETE,
+					VBucket: vb,
+					Key:     []byte(k),
+					Cas:     orig.Cas}
+			}
 			resp, err := client.Send(req)
 			if err == nil {
 				return resp, nil
