@@ -2,13 +2,19 @@ package memcached
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/dustin/gomemcached"
 )
 
+var noConn = errors.New("No connection")
+
 func getResponse(s io.Reader, buf []byte) (rv *gomemcached.MCResponse, err error) {
+	if s == nil {
+		return nil, noConn
+	}
 	_, err = io.ReadFull(s, buf)
 	if err != nil {
 		return rv, err
@@ -58,6 +64,9 @@ func grokHeader(hdrBytes []byte) (rv *gomemcached.MCResponse, err error) {
 }
 
 func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
+	if o == nil {
+		return noConn
+	}
 	if len(req.Body) < 128 {
 		_, err = o.Write(req.Bytes())
 	} else {
