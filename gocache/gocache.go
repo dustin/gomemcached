@@ -41,7 +41,7 @@ func waitForConnections(ls net.Listener) {
 	for {
 		s, e := ls.Accept()
 		if e == nil {
-			log.Print("Got a connection %s", s)
+			log.Printf("Got a connection from %v", s.RemoteAddr())
 			go memcached.HandleIO(s, handler)
 		} else {
 			log.Printf("Error accepting from %s", ls)
