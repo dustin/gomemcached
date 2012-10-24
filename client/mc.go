@@ -280,14 +280,16 @@ func (c CasOp) Error() string {
 	panic("Unhandled value")
 }
 
-// A function to perform a CAS transform
+// A function to perform a CAS transform.
+// Input is the current value, or nil if no value exists.
+// The function should return the new value (if any) to set, and the store/quit/delete operation.
 type CasFunc func(current []byte) ([]byte, CasOp)
 
 // Perform a CAS transform with the given function.
 //
-// If the value does not exist, an empty byte string will be sent to f
+// If the value does not exist, a nil current value will be sent to f.
 func (client *Client) CAS(vb uint16, k string, f CasFunc,
-	initexp int) (rv *gomemcached.MCResponse, err error) {
+	initexp int) (*gomemcached.MCResponse, error) {
 
 	flags := 0
 	exp := 0
@@ -295,18 +297,18 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 	for {
 		orig, err := client.Get(vb, k)
 		if err != nil && (orig == nil || orig.Status != gomemcached.KEY_ENOENT) {
-			return rv, err
+			return nil, err
 		}
 
 		if orig.Status == gomemcached.KEY_ENOENT {
-			init, operation := f([]byte{})
+			init, operation := f(nil)
 			if operation == CASQuit || operation == CASDelete {
 				return nil, operation
 			}
 			// If it doesn't exist, add it
 			resp, err := client.Add(vb, k, 0, initexp, init)
 			if err == nil && resp.Status != gomemcached.KEY_EEXISTS {
-				return rv, err
+				return nil, err
 			}
 		} else {
 			var req *gomemcached.MCRequest
