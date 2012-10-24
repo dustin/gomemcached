@@ -29,8 +29,13 @@ func Connect(prot, dest string) (rv *Client, err error) {
 	if err != nil {
 		return nil, err
 	}
+	return Wrap(conn)
+}
+
+// Wrap an existing transport.
+func Wrap(rwc io.ReadWriteCloser) (rv *Client, err error) {
 	return &Client{
-		conn:    conn,
+		conn:    rwc,
 		healthy: true,
 		hdrBuf:  make([]byte, gomemcached.HDR_LEN),
 	}, nil
