@@ -45,7 +45,7 @@ func readContents(s io.Reader, res *gomemcached.MCResponse) error {
 }
 
 func grokHeader(hdrBytes []byte) (rv *gomemcached.MCResponse, err error) {
-	if hdrBytes[0] != gomemcached.RES_MAGIC {
+	if hdrBytes[0] != gomemcached.RES_MAGIC && hdrBytes[0] != gomemcached.REQ_MAGIC {
 		return rv, fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
 	}
 	rv = &gomemcached.MCResponse{
