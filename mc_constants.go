@@ -198,3 +198,29 @@ func (s Status) String() (rv string) {
 	}
 	return rv
 }
+
+// Return true if a command is a "quiet" command.
+func (o CommandCode) IsQuiet() bool {
+	switch o {
+	case GETQ,
+		GETKQ,
+		SETQ,
+		ADDQ,
+		REPLACEQ,
+		DELETEQ,
+		INCREMENTQ,
+		DECREMENTQ,
+		QUITQ,
+		FLUSHQ,
+		APPENDQ,
+		PREPENDQ,
+		RSETQ,
+		RAPPENDQ,
+		RPREPENDQ,
+		RDELETEQ,
+		RINCRQ,
+		RDECRQ:
+		return true
+	}
+	return false
+}
