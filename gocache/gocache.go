@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 
@@ -21,7 +22,7 @@ type reqHandler struct {
 	ch chan chanReq
 }
 
-func (rh *reqHandler) HandleMessage(req *gomemcached.MCRequest) *gomemcached.MCResponse {
+func (rh *reqHandler) HandleMessage(w io.Writer, req *gomemcached.MCRequest) *gomemcached.MCResponse {
 	cr := chanReq{
 		req,
 		make(chan *gomemcached.MCResponse),

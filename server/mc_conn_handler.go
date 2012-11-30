@@ -24,10 +24,10 @@ func (b BadMagic) Error() string {
 	return fmt.Sprintf("Bad magic:  0x%02x", b.was)
 }
 
-type funcHandler func(*gomemcached.MCRequest) *gomemcached.MCResponse
+type funcHandler func(io.Writer, *gomemcached.MCRequest) *gomemcached.MCResponse
 
-func (fh funcHandler) HandleMessage(msg *gomemcached.MCRequest) *gomemcached.MCResponse {
-	return fh(msg)
+func (fh funcHandler) HandleMessage(w io.Writer, msg *gomemcached.MCRequest) *gomemcached.MCResponse {
+	return fh(w, msg)
 }
 
 // Request handler for doing server stuff.
@@ -36,11 +36,14 @@ type RequestHandler interface {
 	// If the message should cause the connection to terminate,
 	// the Fatal flag should be set.  If the message requires no
 	// response, return nil
-	HandleMessage(*gomemcached.MCRequest) *gomemcached.MCResponse
+	//
+	// Most clients should ignore the io.Writer unless they want
+	// complete control over the response.
+	HandleMessage(io.Writer, *gomemcached.MCRequest) *gomemcached.MCResponse
 }
 
 // Convert a request handler function as a RequestHandler.
-func FuncHandler(f func(*gomemcached.MCRequest) *gomemcached.MCResponse) RequestHandler {
+func FuncHandler(f func(io.Writer, *gomemcached.MCRequest) *gomemcached.MCResponse) RequestHandler {
 	return funcHandler(f)
 }
 
@@ -62,7 +65,7 @@ func HandleMessage(r io.Reader, w io.Writer, handler RequestHandler) error {
 		return err
 	}
 
-	res := handler.HandleMessage(&req)
+	res := handler.HandleMessage(w, &req)
 	if res == nil {
 		// Quiet command
 		return nil
