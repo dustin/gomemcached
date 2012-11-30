@@ -3,6 +3,7 @@ package gomemcached
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 // A memcached response
@@ -100,4 +101,17 @@ func (res *MCResponse) Bytes() []byte {
 	copy(data[pos:pos+len(res.Body)], res.Body)
 
 	return data
+}
+
+// Send this response message across a writer.
+func (res *MCResponse) Transmit(w io.Writer) (err error) {
+	if len(res.Body) < 128 {
+		_, err = w.Write(res.Bytes())
+	} else {
+		_, err = w.Write(res.HeaderBytes())
+		if err == nil && len(res.Body) > 0 {
+			_, err = w.Write(res.Body)
+		}
+	}
+	return
 }

@@ -3,6 +3,7 @@ package gomemcached
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 // A Memcached Request
@@ -96,4 +97,17 @@ func (req *MCRequest) Bytes() []byte {
 	}
 
 	return data
+}
+
+// Send this request message across a writer.
+func (req *MCRequest) Transmit(w io.Writer) (err error) {
+	if len(req.Body) < 128 {
+		_, err = w.Write(req.Bytes())
+	} else {
+		_, err = w.Write(req.HeaderBytes())
+		if err == nil && len(req.Body) > 0 {
+			_, err = w.Write(req.Body)
+		}
+	}
+	return
 }

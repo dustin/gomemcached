@@ -44,32 +44,41 @@ func FuncHandler(f func(*gomemcached.MCRequest) *gomemcached.MCResponse) Request
 	return funcHandler(f)
 }
 
-func HandleIO(s io.ReadWriteCloser, handler RequestHandler) {
+// Handle until the handler returns a fatal message or a read or write
+// on the socket fails.
+func HandleIO(s io.ReadWriteCloser, handler RequestHandler) error {
 	defer s.Close()
-	for handleMessage(s, s, handler) {
+	var err error
+	for err == nil {
+		err = HandleMessage(s, s, handler)
 	}
+	return err
 }
 
-func handleMessage(r io.Reader, w io.Writer, handler RequestHandler) (ret bool) {
+// Handle an individual message.
+func HandleMessage(r io.Reader, w io.Writer, handler RequestHandler) error {
 	req, err := ReadPacket(r)
 	if err != nil {
-		return
+		return err
 	}
 
 	res := handler.HandleMessage(&req)
 	if res == nil {
 		// Quiet command
-		return true
+		return nil
 	}
 
-	ret = !res.Fatal
-	if ret {
+	if !res.Fatal {
 		res.Opcode = req.Opcode
 		res.Opaque = req.Opaque
-		transmitResponse(w, res)
+		err = res.Transmit(w)
+		if err != nil {
+			return err
+		}
+		return io.EOF
 	}
 
-	return
+	return nil
 }
 
 func ReadPacket(r io.Reader) (rv gomemcached.MCRequest, err error) {
@@ -104,15 +113,7 @@ func readContents(s io.Reader, req *gomemcached.MCRequest) (err error) {
 }
 
 func transmitResponse(o io.Writer, res *gomemcached.MCResponse) (err error) {
-	if len(res.Body) < 128 {
-		_, err = o.Write(res.Bytes())
-	} else {
-		_, err = o.Write(res.HeaderBytes())
-		if err == nil && len(res.Body) > 0 {
-			_, err = o.Write(res.Body)
-		}
-	}
-	return
+	return res.Transmit(o)
 }
 
 func readOb(s io.Reader, buf []byte) error {

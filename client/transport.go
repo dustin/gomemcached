@@ -67,13 +67,5 @@ func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
 	if o == nil {
 		return noConn
 	}
-	if len(req.Body) < 128 {
-		_, err = o.Write(req.Bytes())
-	} else {
-		_, err = o.Write(req.HeaderBytes())
-		if err == nil && len(req.Body) > 0 {
-			_, err = o.Write(req.Body)
-		}
-	}
-	return
+	return req.Transmit(o)
 }
