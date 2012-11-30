@@ -78,10 +78,10 @@ func HandleMessage(r io.Reader, w io.Writer, handler RequestHandler) error {
 		if err != nil {
 			return err
 		}
-		return io.EOF
+		return nil
 	}
 
-	return nil
+	return io.EOF
 }
 
 func ReadPacket(r io.Reader) (rv gomemcached.MCRequest, err error) {
