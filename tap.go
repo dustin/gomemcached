@@ -31,17 +31,25 @@ var TapConnectFlagNames = map[TapConnectFlag]string{
 	FIX_FLAG_BYTEORDER: "FIX_FLAG_BYTEORDER",
 }
 
-func (f TapConnectFlag) String() string {
-	parts := []string{}
+
+// Split the ORed flags into the individual bit flags.
+func (f TapConnectFlag) SplitFlags() []TapConnectFlag {
+	rv := []TapConnectFlag{}
 	for i := uint32(1); f != 0; i = i << 1 {
 		if uint32(f)&i == i {
-			p := TapConnectFlagNames[TapConnectFlag(i)]
-			if p == "" {
-				p = fmt.Sprintf("0x%x", i)
-			}
-			parts = append(parts, p)
+			rv = append(rv, TapConnectFlag(i))
 		}
 		f = TapConnectFlag(uint32(f) & (^i))
 	}
-	return strings.Join(parts, "|")
+	return rv
 }
+
+func (f TapConnectFlag) String() string {
+	parts := []string{}
+	for _, x := range f.SplitFlags() {
+		p := TapConnectFlagNames[x]
+		if p == "" {
+			p = fmt.Sprintf("0x%x", int(x))
+		}
+		parts = append(parts, p)
+	}
