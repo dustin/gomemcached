@@ -1,7 +1,11 @@
 package gomemcached
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"strings"
 )
 
@@ -31,6 +35,48 @@ var TapConnectFlagNames = map[TapConnectFlag]string{
 	FIX_FLAG_BYTEORDER: "FIX_FLAG_BYTEORDER",
 }
 
+// A function to parse a single tap extra
+type TapItemParser func(io.Reader) (interface{}, error)
+
+func TapParseUint64(r io.Reader) (interface{}, error) {
+	var rv uint64
+	err := binary.Read(r, binary.BigEndian, &rv)
+	return rv, err
+}
+
+func TapParseUint16(r io.Reader) (interface{}, error) {
+	var rv uint16
+	err := binary.Read(r, binary.BigEndian, &rv)
+	return rv, err
+}
+
+func TapParseBool(r io.Reader) (interface{}, error) {
+	return true, nil
+}
+
+func TapParseVBList(r io.Reader) (interface{}, error) {
+	num, err := TapParseUint16(r)
+	if err != nil {
+		return nil, err
+	}
+	n := int(num.(uint16))
+
+	rv := make([]uint16, n)
+	for i := 0; i < n; i++ {
+		x, err := TapParseUint16(r)
+		if err != nil {
+			return nil, err
+		}
+		rv[i] = x.(uint16)
+	}
+
+	return rv, err
+}
+
+var TapFlagParsers = map[TapConnectFlag]TapItemParser{
+	BACKFILL:      TapParseUint64,
+	LIST_VBUCKETS: TapParseVBList,
+}
 
 // Split the ORed flags into the individual bit flags.
 func (f TapConnectFlag) SplitFlags() []TapConnectFlag {
@@ -53,3 +99,46 @@ func (f TapConnectFlag) String() string {
 		}
 		parts = append(parts, p)
 	}
+	return strings.Join(parts, "|")
+}
+
+type TapConnect struct {
+	Flags         map[TapConnectFlag]interface{}
+	RemainingBody []byte
+	Name          string
+}
+
+// Parse the tap request into the interesting bits we may need to do something with.
+func (req *MCRequest) ParseTapCommands() (TapConnect, error) {
+	rv := TapConnect{
+		Flags: map[TapConnectFlag]interface{}{},
+		Name:  string(req.Key),
+	}
+
+	if len(req.Extras) < 4 {
+		return rv, fmt.Errorf("not enough extra bytes: %x", req.Extras)
+	}
+
+	flags := TapConnectFlag(binary.BigEndian.Uint32(req.Extras))
+
+	r := bytes.NewReader(req.Body)
+
+	for _, f := range flags.SplitFlags() {
+		fun := TapFlagParsers[f]
+		if fun == nil {
+			fun = TapParseBool
+		}
+
+		val, err := fun(r)
+		if err != nil {
+			return rv, err
+		}
+
+		rv.Flags[f] = val
+	}
+
+	var err error
+	rv.RemainingBody, err = ioutil.ReadAll(r)
+
+	return rv, err
+}
