@@ -1,6 +1,7 @@
 package gomemcached
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -74,5 +75,25 @@ func BenchmarkEncodingResponseLarge(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		req.Bytes()
+	}
+}
+
+func TestIsNotFound(t *testing.T) {
+	tests := []struct {
+		e  error
+		is bool
+	}{
+		{nil, false},
+		{errors.New("something"), false},
+		{MCResponse{}, false},
+		{&MCResponse{}, false},
+		{MCResponse{Status: KEY_ENOENT}, true},
+		{&MCResponse{Status: KEY_ENOENT}, true},
+	}
+
+	for i, x := range tests {
+		if IsNotFound(x.e) != x.is {
+			t.Errorf("Expected %v for %#v (%v)", x.is, x.e, i)
+		}
 	}
 }

@@ -34,6 +34,17 @@ func (res MCResponse) Error() string {
 		res.Status, string(res.Body))
 }
 
+// True if this error represents a "not found" response.
+func IsNotFound(e error) bool {
+	if res, ok := e.(MCResponse); ok {
+		return res.Status == KEY_ENOENT
+	}
+	if res, ok := e.(*MCResponse); ok {
+		return res.Status == KEY_ENOENT
+	}
+	return false
+}
+
 // Number of bytes this response consumes on the wire.
 func (res *MCResponse) Size() int {
 	return HDR_LEN + len(res.Extras) + len(res.Key) + len(res.Body)
