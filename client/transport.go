@@ -11,6 +11,18 @@ import (
 
 var noConn = errors.New("No connection")
 
+// If the error is a memcached response, declare the error to be nil
+// so a client can handle the status without worrying about whether it
+// indicates success or failure.
+func UnwrapMemcachedError(rv *gomemcached.MCResponse,
+	err error) (*gomemcached.MCResponse, error) {
+
+	if rv == err {
+		return rv, nil
+	}
+	return rv, err
+}
+
 func getResponse(s io.Reader, buf []byte) (rv *gomemcached.MCResponse, err error) {
 	if s == nil {
 		return nil, noConn
@@ -24,6 +36,9 @@ func getResponse(s io.Reader, buf []byte) (rv *gomemcached.MCResponse, err error
 		return rv, err
 	}
 	err = readContents(s, rv)
+	if err == nil && rv.Status != gomemcached.SUCCESS {
+		err = rv
+	}
 	return rv, err
 }
 

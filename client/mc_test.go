@@ -214,7 +214,7 @@ func TestDecode(t *testing.T) {
 		's', 'o', 'm', 'e', 'v', 'a', 'l', 'u', 'e'}
 
 	buf := make([]byte, gomemcached.HDR_LEN)
-	res, err := getResponse(bytes.NewReader(data), buf)
+	res, err := UnwrapMemcachedError(getResponse(bytes.NewReader(data), buf))
 	if err != nil {
 		t.Fatalf("Error parsing response: %v", err)
 	}
