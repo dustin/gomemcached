@@ -297,7 +297,7 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 	for {
 		orig, err := client.Get(vb, k)
 		if err != nil && (orig == nil || orig.Status != gomemcached.KEY_ENOENT) {
-			return nil, err
+			return orig, err
 		}
 
 		if orig.Status == gomemcached.KEY_ENOENT {
@@ -306,9 +306,9 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 				return nil, operation
 			}
 			// If it doesn't exist, add it
-			resp, err := client.Add(vb, k, 0, initexp, init)
+			resp, err := UnwrapMemcachedError(client.Add(vb, k, 0, initexp, init))
 			if err == nil && resp.Status != gomemcached.KEY_EEXISTS {
-				return nil, err
+				return nil, resp
 			}
 		} else {
 			var req *gomemcached.MCRequest
