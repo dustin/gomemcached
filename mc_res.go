@@ -30,8 +30,8 @@ func (res MCResponse) String() string {
 
 // Response as an error.
 func (res MCResponse) Error() string {
-	return fmt.Sprintf("MCResponse status=%v, msg: %s",
-		res.Status, string(res.Body))
+	return fmt.Sprintf("MCResponse status=%v, opcode=%v, opaque=%v, msg: %s",
+		res.Status, res.Opcode, res.Opaque, string(res.Body))
 }
 
 // True if this error represents a "not found" response.
