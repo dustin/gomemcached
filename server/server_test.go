@@ -11,7 +11,7 @@ import (
 )
 
 func TestTransmitRes(t *testing.T) {
-	b := bytes.NewBuffer([]byte{})
+	b := &bytes.Buffer{}
 	buf := bufio.NewWriter(b)
 
 	res := gomemcached.MCResponse{
@@ -54,7 +54,7 @@ func TestTransmitRes(t *testing.T) {
 }
 
 func BenchmarkTransmitRes(b *testing.B) {
-	bout := bytes.NewBuffer([]byte{})
+	bout := &bytes.Buffer{}
 
 	res := gomemcached.MCResponse{
 		Opcode: gomemcached.SET,
@@ -78,7 +78,7 @@ func BenchmarkTransmitRes(b *testing.B) {
 }
 
 func BenchmarkTransmitResLarge(b *testing.B) {
-	bout := bytes.NewBuffer([]byte{})
+	bout := &bytes.Buffer{}
 
 	res := gomemcached.MCResponse{
 		Opcode: gomemcached.SET,
