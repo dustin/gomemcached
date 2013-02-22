@@ -92,10 +92,7 @@ func (client *Client) Get(vb uint16, key string) (*gomemcached.MCResponse, error
 		Opcode:  gomemcached.GET,
 		VBucket: vb,
 		Key:     []byte(key),
-		Cas:     0,
-		Opaque:  0,
-		Extras:  []byte{},
-		Body:    []byte{}})
+	})
 }
 
 // Delete a key.
@@ -103,23 +100,13 @@ func (client *Client) Del(vb uint16, key string) (*gomemcached.MCResponse, error
 	return client.Send(&gomemcached.MCRequest{
 		Opcode:  gomemcached.DELETE,
 		VBucket: vb,
-		Key:     []byte(key),
-		Cas:     0,
-		Opaque:  0,
-		Extras:  []byte{},
-		Body:    []byte{}})
+		Key:     []byte(key)})
 }
 
 // List auth mechanisms
 func (client *Client) AuthList() (*gomemcached.MCResponse, error) {
 	return client.Send(&gomemcached.MCRequest{
-		Opcode:  gomemcached.SASL_LIST_MECHS,
-		VBucket: 0,
-		Key:     []byte{},
-		Cas:     0,
-		Opaque:  0,
-		Extras:  []byte{},
-		Body:    []byte{}})
+		Opcode: gomemcached.SASL_LIST_MECHS})
 }
 
 func (client *Client) Auth(user, pass string) (*gomemcached.MCResponse, error) {
@@ -132,13 +119,9 @@ func (client *Client) Auth(user, pass string) (*gomemcached.MCResponse, error) {
 	authMech := string(res.Body)
 	if strings.Index(authMech, "PLAIN") != -1 {
 		return client.Send(&gomemcached.MCRequest{
-			Opcode:  gomemcached.SASL_AUTH,
-			VBucket: 0,
-			Key:     []byte("PLAIN"),
-			Cas:     0,
-			Opaque:  0,
-			Extras:  []byte{},
-			Body:    []byte(fmt.Sprintf("\x00%s\x00%s", user, pass))})
+			Opcode: gomemcached.SASL_AUTH,
+			Key:    []byte("PLAIN"),
+			Body:   []byte(fmt.Sprintf("\x00%s\x00%s", user, pass))})
 	}
 	return res, fmt.Errorf("Auth mechanism PLAIN not supported")
 }
@@ -167,10 +150,8 @@ func (client *Client) Incr(vb uint16, key string,
 		Opcode:  gomemcached.INCREMENT,
 		VBucket: vb,
 		Key:     []byte(key),
-		Cas:     0,
-		Opaque:  0,
 		Extras:  make([]byte, 8+8+4),
-		Body:    []byte{}}
+	}
 	binary.BigEndian.PutUint64(req.Extras[:8], amt)
 	binary.BigEndian.PutUint64(req.Extras[8:16], def)
 	binary.BigEndian.PutUint32(req.Extras[16:20], uint32(exp))
@@ -230,10 +211,8 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 			Opcode:  gomemcached.GETQ,
 			VBucket: vb,
 			Key:     []byte(k),
-			Cas:     0,
 			Opaque:  uint32(i),
-			Extras:  []byte{},
-			Body:    []byte{}})
+		})
 		if err != nil {
 			return rv, err
 		}
@@ -241,10 +220,6 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 
 	err := client.Transmit(&gomemcached.MCRequest{
 		Opcode: gomemcached.NOOP,
-		Key:    []byte{},
-		Cas:    0,
-		Extras: []byte{},
-		Body:   []byte{},
 		Opaque: terminalOpaque})
 	if err != nil {
 		return rv, err
@@ -362,12 +337,10 @@ func (client *Client) Stats(key string) ([]StatValue, error) {
 	rv := make([]StatValue, 0, 128)
 
 	req := &gomemcached.MCRequest{
-		Opcode:  gomemcached.STAT,
-		VBucket: 0,
-		Key:     []byte(key),
-		Cas:     0,
-		Opaque:  918494,
-		Extras:  []byte{}}
+		Opcode: gomemcached.STAT,
+		Key:    []byte(key),
+		Opaque: 918494,
+	}
 
 	err := transmitRequest(client.conn, req)
 	if err != nil {

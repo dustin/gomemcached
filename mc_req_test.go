@@ -11,7 +11,6 @@ func TestEncodingRequest(t *testing.T) {
 		Cas:     938424885,
 		Opaque:  7242,
 		VBucket: 824,
-		Extras:  []byte{},
 		Key:     []byte("somekey"),
 		Body:    []byte("somevalue"),
 	}
@@ -47,7 +46,6 @@ func BenchmarkEncodingRequest(b *testing.B) {
 		Cas:     938424885,
 		Opaque:  7242,
 		VBucket: 824,
-		Extras:  []byte{},
 		Key:     []byte("somekey"),
 		Body:    []byte("somevalue"),
 	}
@@ -65,7 +63,6 @@ func BenchmarkEncodingRequest0CAS(b *testing.B) {
 		Cas:     0,
 		Opaque:  7242,
 		VBucket: 824,
-		Extras:  []byte{},
 		Key:     []byte("somekey"),
 		Body:    []byte("somevalue"),
 	}

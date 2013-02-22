@@ -19,7 +19,6 @@ func TestTransmitRes(t *testing.T) {
 		Cas:    938424885,
 		Opaque: 7242,
 		Status: 0x338,
-		Extras: []byte{},
 		Key:    []byte("somekey"),
 		Body:   []byte("somevalue"),
 	}
@@ -62,7 +61,6 @@ func BenchmarkTransmitRes(b *testing.B) {
 		Cas:    938424885,
 		Opaque: 7242,
 		Status: 824,
-		Extras: []byte{},
 		Key:    []byte("somekey"),
 		Body:   []byte("somevalue"),
 	}
@@ -87,7 +85,6 @@ func BenchmarkTransmitResLarge(b *testing.B) {
 		Cas:    938424885,
 		Opaque: 7242,
 		Status: 824,
-		Extras: []byte{},
 		Key:    []byte("somekey"),
 		Body:   make([]byte, 24*1024),
 	}
@@ -110,7 +107,6 @@ func BenchmarkTransmitResNull(b *testing.B) {
 		Cas:    938424885,
 		Opaque: 7242,
 		Status: 824,
-		Extras: []byte{},
 		Key:    []byte("somekey"),
 		Body:   []byte("somevalue"),
 	}
