@@ -128,7 +128,7 @@ func readOb(s io.Reader, buf []byte) error {
 }
 
 func grokHeader(hdrBytes []byte) (rv gomemcached.MCRequest, err error) {
-	if hdrBytes[0] != gomemcached.REQ_MAGIC {
+	if !(hdrBytes[0] == gomemcached.REQ_MAGIC || hdrBytes[0] == gomemcached.RES_MAGIC) {
 		return rv, &BadMagic{was: hdrBytes[0]}
 	}
 	rv.Opcode = gomemcached.CommandCode(hdrBytes[1])
