@@ -2,6 +2,7 @@ package gomemcached
 
 import (
 	"bytes"
+	"encoding/binary"
 	"io"
 	"io/ioutil"
 	"reflect"
@@ -78,5 +79,62 @@ func TestTapParsers(t *testing.T) {
 		} else {
 			t.Errorf("Error fail, got %v on %v", err, x)
 		}
+	}
+}
+
+func TestParseTapCommandsEmpty(t *testing.T) {
+	r := MCRequest{}
+	c, err := r.ParseTapCommands()
+	if err == nil {
+		t.Fatalf("Expected error parsing empty tap conn, got: %v", c)
+	}
+}
+
+func TestParseTapCommands(t *testing.T) {
+	extras := make([]byte, 4)
+	binary.BigEndian.PutUint32(extras, uint32(BACKFILL|DUMP|LIST_VBUCKETS))
+
+	// Add our backfill thing.
+	ourbf := uint64(824859588116)
+	body := make([]byte, 8)
+	binary.BigEndian.PutUint64(body, ourbf)
+	// And a list of vbuckets
+	body = append(body, 0, 3)
+	body = append(body, 0, 1)
+	body = append(body, 0, 2)
+	body = append(body, 0, 4)
+	// And an extra byte because
+	body = append(body, 13)
+
+	req := MCRequest{Key: []byte("hello"), Extras: extras, Body: body}
+	c, err := req.ParseTapCommands()
+
+	if err != nil {
+		t.Fatalf("Error parsing tap commands: %v", err)
+	}
+
+	if c.Name != "hello" {
+		t.Errorf("Where's our name? %v", c.Name)
+	}
+
+	// We added three things:
+	if len(c.Flags) != 3 {
+		t.Errorf("Expected three flags, got %v", c.Flags)
+	}
+	// And we've got a leftover
+	if !reflect.DeepEqual(c.RemainingBody, []byte{13}) {
+		t.Errorf("Didn't get our expected leftovers: %v", c.RemainingBody)
+	}
+
+	// Check the flags
+	if !(c.Flags[DUMP]).(bool) {
+		t.Errorf("Expected dump to be set. Wasn't.")
+	}
+	if c.Flags[BACKFILL].(uint64) != ourbf {
+		t.Errorf("Expected bf to be %v, was %v", ourbf, c.Flags[BACKFILL])
+	}
+	if !reflect.DeepEqual(c.Flags[LIST_VBUCKETS], []uint16{1, 2, 4}) {
+		t.Errorf("Didn't get our expected vbucket list: %v",
+			c.Flags[LIST_VBUCKETS])
 	}
 }
