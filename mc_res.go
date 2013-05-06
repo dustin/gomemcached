@@ -120,7 +120,7 @@ func (res *MCResponse) Transmit(w io.Writer) (err error) {
 		_, err = w.Write(res.Bytes())
 	} else {
 		_, err = w.Write(res.HeaderBytes())
-		if err == nil && len(res.Body) > 0 {
+		if err == nil {
 			_, err = w.Write(res.Body)
 		}
 	}

@@ -3,6 +3,7 @@ package gomemcached
 import (
 	"bytes"
 	"errors"
+	"io/ioutil"
 	"reflect"
 	"testing"
 )
@@ -174,4 +175,19 @@ func TestIsNotFound(t *testing.T) {
 			t.Errorf("Expected %v for %#v (%v)", x.is, x.e, i)
 		}
 	}
+}
+
+func TestResponseTransmit(t *testing.T) {
+	res := MCResponse{Key: []byte("thekey")}
+	err := res.Transmit(ioutil.Discard)
+	if err != nil {
+		t.Errorf("Error sending small response: %v", err)
+	}
+
+	res.Body = make([]byte, 256)
+	err = res.Transmit(ioutil.Discard)
+	if err != nil {
+		t.Errorf("Error sending large response thing: %v", err)
+	}
+
 }
