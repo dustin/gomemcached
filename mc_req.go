@@ -105,7 +105,7 @@ func (req *MCRequest) Transmit(w io.Writer) (err error) {
 		_, err = w.Write(req.Bytes())
 	} else {
 		_, err = w.Write(req.HeaderBytes())
-		if err == nil && len(req.Body) > 0 {
+		if err == nil {
 			_, err = w.Write(req.Body)
 		}
 	}

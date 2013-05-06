@@ -2,6 +2,7 @@ package gomemcached
 
 import (
 	"bytes"
+	"io/ioutil"
 	"reflect"
 	"testing"
 )
@@ -169,4 +170,19 @@ func BenchmarkEncodingRequest1Extra(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		req.Bytes()
 	}
+}
+
+func TestRequestTransmit(t *testing.T) {
+	res := MCRequest{Key: []byte("thekey")}
+	err := res.Transmit(ioutil.Discard)
+	if err != nil {
+		t.Errorf("Error sending small request: %v", err)
+	}
+
+	res.Body = make([]byte, 256)
+	err = res.Transmit(ioutil.Discard)
+	if err != nil {
+		t.Errorf("Error sending large request thing: %v", err)
+	}
+
 }
