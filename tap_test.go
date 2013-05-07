@@ -90,6 +90,27 @@ func TestParseTapCommandsEmpty(t *testing.T) {
 	}
 }
 
+func TestParseTapCommandsMalformed(t *testing.T) {
+	extras := make([]byte, 4)
+	binary.BigEndian.PutUint32(extras, uint32(BACKFILL|DUMP|LIST_VBUCKETS))
+
+	// Add our backfill thing.
+	ourbf := uint64(824859588116)
+	body := make([]byte, 8)
+	binary.BigEndian.PutUint64(body, ourbf)
+	// And a list of vbuckets
+	body = append(body, 0, 3)
+	body = append(body, 0, 1)
+	body = append(body, 0, 2)
+
+	req := MCRequest{Key: []byte("hello"), Extras: extras, Body: body}
+	c, err := req.ParseTapCommands()
+
+	if err == nil {
+		t.Fatalf("Expected error parsing tap commands, got %v", c)
+	}
+}
+
 func TestParseTapCommands(t *testing.T) {
 	extras := make([]byte, 4)
 	binary.BigEndian.PutUint32(extras, uint32(BACKFILL|DUMP|LIST_VBUCKETS))
