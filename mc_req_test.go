@@ -40,6 +40,11 @@ func TestEncodingRequest(t *testing.T) {
 		t.Fatalf("Expected:\n%#v\n  -- got -- \n%#v",
 			expected, got)
 	}
+
+	exp := `{MCRequest opcode=SET, bodylen=9, key='somekey'}`
+	if req.String() != exp {
+		t.Errorf("Expected string=%q, got %q", exp, req.String())
+	}
 }
 
 func TestEncodingRequestWithExtras(t *testing.T) {

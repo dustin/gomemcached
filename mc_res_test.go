@@ -41,6 +41,16 @@ func TestEncodingResponse(t *testing.T) {
 		t.Fatalf("Expected:\n%#v\n  -- got -- \n%#v",
 			expected, got)
 	}
+
+	exp := `{MCResponse status=0x62e keylen=7, extralen=0, bodylen=9}`
+	if req.String() != exp {
+		t.Errorf("Expected string=%q, got %q", exp, req.String())
+	}
+
+	exp = `MCResponse status=0x62e, opcode=SET, opaque=7242, msg: somevalue`
+	if req.Error() != exp {
+		t.Errorf("Expected string=%q, got %q", exp, req.Error())
+	}
 }
 
 func TestEncodingResponseWithExtras(t *testing.T) {
