@@ -1,6 +1,7 @@
 package gomemcached
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -24,5 +25,15 @@ func TestStatusNameString(t *testing.T) {
 	s := Status(0x80)
 	if s.String() != "0x80" {
 		t.Fatalf("Expected \"0x80\" for 0x80, got \"%v\"", s.String())
+	}
+}
+
+func TestIsQuiet(t *testing.T) {
+	for v, k := range CommandNames {
+		isq := strings.HasSuffix(k, "Q")
+		if v.IsQuiet() != isq {
+			t.Errorf("Expected quiet=%v for %v, got %v",
+				isq, v, v.IsQuiet())
+		}
 	}
 }
