@@ -120,3 +120,26 @@ func BenchmarkTransmitResNull(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkReceive(b *testing.B) {
+	res := gomemcached.MCResponse{
+		Opcode: gomemcached.SET,
+		Cas:    938424885,
+		Opaque: 7242,
+		Status: 824,
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	datum := res.Bytes()
+	datum[0] = gomemcached.REQ_MAGIC
+	b.SetBytes(int64(len(datum)))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := ReadPacket(bytes.NewReader(datum))
+		if err != nil {
+			b.Fatalf("Failed to read: %v", err)
+		}
+	}
+}

@@ -6,6 +6,10 @@ import (
 	"io"
 )
 
+// The maximum reasonable body length to expect.
+// Anything larger than this will result in an error.
+var MaxBodyLen = int(1e6)
+
 // A Memcached Request
 type MCRequest struct {
 	// The command being issued
@@ -110,4 +114,44 @@ func (req *MCRequest) Transmit(w io.Writer) (err error) {
 		}
 	}
 	return
+}
+
+// Fill this MCRequest with the data from this reader.
+func (req *MCRequest) Receive(r io.Reader) error {
+	hdrBytes := make([]byte, HDR_LEN)
+	_, err := io.ReadFull(r, hdrBytes)
+	if err != nil {
+		return err
+	}
+
+	if hdrBytes[0] != RES_MAGIC && hdrBytes[0] != REQ_MAGIC {
+		return fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
+	}
+
+	klen := int(binary.BigEndian.Uint16(hdrBytes[2:]))
+	elen := int(hdrBytes[4])
+
+	req.Opcode = CommandCode(hdrBytes[1])
+	// Vbucket at 6:7
+	req.VBucket = binary.BigEndian.Uint16(hdrBytes[6:])
+	bodyLen := int(binary.BigEndian.Uint32(hdrBytes[8:]) -
+		uint32(klen) - uint32(elen))
+	if bodyLen > MaxBodyLen {
+		return fmt.Errorf("%d is too big (max %s)",
+			bodyLen, MaxBodyLen)
+	}
+	req.Opaque = binary.BigEndian.Uint32(hdrBytes[12:])
+	req.Cas = binary.BigEndian.Uint64(hdrBytes[16:])
+
+	buf := make([]byte, klen+elen+bodyLen)
+	_, err = io.ReadFull(r, buf)
+	if err != nil {
+		return err
+	}
+
+	req.Extras = buf[0:elen]
+	req.Key = buf[elen : klen+elen]
+	req.Body = buf[klen+elen:]
+
+	return nil
 }

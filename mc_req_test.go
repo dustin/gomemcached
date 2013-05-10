@@ -191,3 +191,54 @@ func TestRequestTransmit(t *testing.T) {
 	}
 
 }
+
+func TestReceiveRequest(t *testing.T) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{1},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
+	}
+
+	data := req.Bytes()
+	data[0] = REQ_MAGIC
+
+	req2 := MCRequest{}
+	err := req2.Receive(bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("Error receiving: %v", err)
+	}
+
+	if !reflect.DeepEqual(req, req2) {
+		t.Fatalf("Expected %#v == %#v", req, req2)
+	}
+}
+
+func BenchmarkReceiveRequest(b *testing.B) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{1},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
+	}
+
+	data := req.Bytes()
+	data[0] = REQ_MAGIC
+
+	b.SetBytes(int64(len(data)))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		req2 := MCRequest{}
+		err := req2.Receive(bytes.NewReader(data))
+		if err != nil {
+			b.Fatalf("Error receiving: %v", err)
+		}
+	}
+}
