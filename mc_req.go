@@ -145,13 +145,11 @@ func (req *MCRequest) Receive(r io.Reader) error {
 
 	buf := make([]byte, klen+elen+bodyLen)
 	_, err = io.ReadFull(r, buf)
-	if err != nil {
-		return err
+	if err == nil {
+		req.Extras = buf[0:elen]
+		req.Key = buf[elen : klen+elen]
+		req.Body = buf[klen+elen:]
 	}
 
-	req.Extras = buf[0:elen]
-	req.Key = buf[elen : klen+elen]
-	req.Body = buf[klen+elen:]
-
-	return nil
+	return err
 }

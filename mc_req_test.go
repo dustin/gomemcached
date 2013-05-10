@@ -217,6 +217,76 @@ func TestReceiveRequest(t *testing.T) {
 	}
 }
 
+func TestReceiveRequestShortHdr(t *testing.T) {
+	req := MCRequest{}
+	err := req.Receive(bytes.NewReader([]byte{1, 2, 3}))
+	if err == nil {
+		t.Fatalf("Expected error, got %#v", req)
+	}
+}
+
+func TestReceiveRequestShortBody(t *testing.T) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{1},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
+	}
+
+	data := req.Bytes()
+	data[0] = REQ_MAGIC
+
+	req2 := MCRequest{}
+	err := req2.Receive(bytes.NewReader(data[:len(data)-3]))
+	if err == nil {
+		t.Fatalf("Expected error, got %#v", req2)
+	}
+}
+
+func TestReceiveRequestBadMagic(t *testing.T) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{1},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
+	}
+
+	data := req.Bytes()
+	data[0] = 0x83
+
+	req2 := MCRequest{}
+	err := req2.Receive(bytes.NewReader(data))
+	if err == nil {
+		t.Fatalf("Expected error, got %#v", req2)
+	}
+}
+
+func TestReceiveRequestLongBody(t *testing.T) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{1},
+		Key:     []byte("somekey"),
+		Body:    make([]byte, MaxBodyLen+5),
+	}
+
+	data := req.Bytes()
+
+	req2 := MCRequest{}
+	err := req2.Receive(bytes.NewReader(data))
+	if err == nil {
+		t.Fatalf("Expected error, got %#v", req2)
+	}
+}
+
 func BenchmarkReceiveRequest(b *testing.B) {
 	req := MCRequest{
 		Opcode:  SET,
