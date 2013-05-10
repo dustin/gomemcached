@@ -187,6 +187,30 @@ func TestIsNotFound(t *testing.T) {
 	}
 }
 
+func TestIsFatal(t *testing.T) {
+	tests := []struct {
+		e  error
+		is bool
+	}{
+		{nil, false},
+		{errors.New("something"), true},
+		{MCResponse{}, true},
+		{&MCResponse{}, true},
+		{MCResponse{Status: KEY_ENOENT}, false},
+		{&MCResponse{Status: KEY_ENOENT}, false},
+		{MCResponse{Status: EINVAL}, false},
+		{&MCResponse{Status: EINVAL}, false},
+		{MCResponse{Status: TMPFAIL}, false},
+		{&MCResponse{Status: TMPFAIL}, false},
+	}
+
+	for i, x := range tests {
+		if IsFatal(x.e) != x.is {
+			t.Errorf("Expected %v for %#v (%v)", x.is, x.e, i)
+		}
+	}
+}
+
 func TestResponseTransmit(t *testing.T) {
 	res := MCResponse{Key: []byte("thekey")}
 	err := res.Transmit(ioutil.Discard)

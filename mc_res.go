@@ -34,15 +34,32 @@ func (res MCResponse) Error() string {
 		res.Status, res.Opcode, res.Opaque, string(res.Body))
 }
 
-// True if this error represents a "not found" response.
-func IsNotFound(e error) bool {
+func errStatus(e error) Status {
+	status := Status(0xffff)
 	if res, ok := e.(MCResponse); ok {
-		return res.Status == KEY_ENOENT
+		status = res.Status
 	}
 	if res, ok := e.(*MCResponse); ok {
-		return res.Status == KEY_ENOENT
+		status = res.Status
 	}
-	return false
+	return status
+}
+
+// True if this error represents a "not found" response.
+func IsNotFound(e error) bool {
+	return errStatus(e) == KEY_ENOENT
+}
+
+// False if this error isn't believed to be fatal to a connection.
+func IsFatal(e error) bool {
+	if e == nil {
+		return false
+	}
+	switch errStatus(e) {
+	case KEY_ENOENT, KEY_EEXISTS, EINVAL, NOT_STORED, TMPFAIL:
+		return false
+	}
+	return true
 }
 
 // Number of bytes this response consumes on the wire.
