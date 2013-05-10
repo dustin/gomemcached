@@ -62,9 +62,7 @@ func (client *Client) Send(req *gomemcached.MCRequest) (rv *gomemcached.MCRespon
 		return
 	}
 	resp, err := getResponse(client.conn, client.hdrBuf)
-	if err != nil && !gomemcached.IsNotFound(err) {
-		client.healthy = false
-	}
+	client.healthy = !gomemcached.IsFatal(err)
 	return resp, err
 }
 
