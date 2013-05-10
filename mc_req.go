@@ -148,6 +148,11 @@ func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) error {
 	buf := make([]byte, klen+elen+bodyLen)
 	_, err = io.ReadFull(r, buf)
 	if err == nil {
+		if req.Opcode >= TAP_MUTATION && req.Opcode <= TAP_CHECKPOINT_END {
+			// In these commands there is "engine private" data at the end of the extras.
+			// The first 2 bytes of extra data give its length.
+			elen += int(binary.BigEndian.Uint16(buf))
+		}
 		req.Extras = buf[0:elen]
 		req.Key = buf[elen : klen+elen]
 		req.Body = buf[klen+elen:]

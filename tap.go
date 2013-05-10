@@ -11,6 +11,7 @@ import (
 
 type TapConnectFlag uint32
 
+// Tap connect option flags
 const (
 	BACKFILL           = TapConnectFlag(0x01)
 	DUMP               = TapConnectFlag(0x02)
@@ -21,6 +22,22 @@ const (
 	CHECKPOINT         = TapConnectFlag(0x40)
 	REGISTERED_CLIENT  = TapConnectFlag(0x80)
 	FIX_FLAG_BYTEORDER = TapConnectFlag(0x100)
+)
+
+// Tap opaque event subtypes
+const (
+	TAP_OPAQUE_ENABLE_AUTO_NACK       = 0
+	TAP_OPAQUE_INITIAL_VBUCKET_STREAM = 1
+	TAP_OPAQUE_ENABLE_CHECKPOINT_SYNC = 2
+	TAP_OPAQUE_CLOSE_TAP_STREAM       = 7
+	TAP_OPAQUE_CLOSE_BACKFILL         = 8
+)
+
+// Tap item flags
+const (
+	TAP_ACK                     = 1
+	TAP_NO_VALUE                = 2
+	TAP_FLAG_NETWORK_BYTE_ORDER = 4
 )
 
 var TapConnectFlagNames = map[TapConnectFlag]string{

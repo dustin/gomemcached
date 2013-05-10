@@ -58,14 +58,14 @@ const (
 	SASL_AUTH       = CommandCode(0x21)
 	SASL_STEP       = CommandCode(0x22)
 
-	TAP_CONNECT          = CommandCode(0x40)
-	TAP_MUTATION         = CommandCode(0x41)
-	TAP_DELETE           = CommandCode(0x42)
-	TAP_FLUSH            = CommandCode(0x43)
-	TAP_OPAQUE           = CommandCode(0x44)
-	TAP_VBUCKET_SET      = CommandCode(0x45)
-	TAP_CHECKPOINT_START = CommandCode(0x46)
-	TAP_CHECKPOINT_END   = CommandCode(0x47)
+	TAP_CONNECT          = CommandCode(0x40) // Client-sent request to initiate Tap feed
+	TAP_MUTATION         = CommandCode(0x41) // Notification of a SET/ADD/REPLACE/etc. on the server
+	TAP_DELETE           = CommandCode(0x42) // Notification of a DELETE on the server
+	TAP_FLUSH            = CommandCode(0x43) // Replicates a flush_all command
+	TAP_OPAQUE           = CommandCode(0x44) // Opaque control data from the engine
+	TAP_VBUCKET_SET      = CommandCode(0x45) // Sets state of vbucket in receiver (used in takeover)
+	TAP_CHECKPOINT_START = CommandCode(0x46) // Notifies start of new checkpoint
+	TAP_CHECKPOINT_END   = CommandCode(0x47) // Notifies end of checkpoint
 )
 
 type Status uint16
