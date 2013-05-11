@@ -323,13 +323,15 @@ func BenchmarkReceiveRequest(b *testing.B) {
 
 	data := req.Bytes()
 	data[0] = REQ_MAGIC
+	rdr := bytes.NewReader(data)
 
 	b.SetBytes(int64(len(data)))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		req2 := MCRequest{}
-		err := req2.Receive(bytes.NewReader(data))
+		rdr.Seek(0, 0)
+		err := req2.Receive(rdr)
 		if err != nil {
 			b.Fatalf("Error receiving: %v", err)
 		}

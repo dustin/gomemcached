@@ -368,6 +368,7 @@ func BenchmarkReceiveResponse(b *testing.B) {
 	}
 
 	data := req.Bytes()
+	rdr := bytes.NewReader(data)
 
 	b.SetBytes(int64(len(data)))
 
@@ -375,7 +376,8 @@ func BenchmarkReceiveResponse(b *testing.B) {
 	buf := make([]byte, HDR_LEN)
 	for i := 0; i < b.N; i++ {
 		res2 := MCResponse{}
-		res2.Receive(bytes.NewReader(data), buf)
+		rdr.Seek(0, 0)
+		res2.Receive(rdr, buf)
 	}
 }
 
@@ -391,12 +393,14 @@ func BenchmarkReceiveResponseNoBuf(b *testing.B) {
 	}
 
 	data := req.Bytes()
+	rdr := bytes.NewReader(data)
 
 	b.SetBytes(int64(len(data)))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		res2 := MCResponse{}
-		res2.Receive(bytes.NewReader(data), nil)
+		rdr.Seek(0, 0)
+		res2.Receive(rdr, nil)
 	}
 }
