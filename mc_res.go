@@ -143,3 +143,38 @@ func (res *MCResponse) Transmit(w io.Writer) (err error) {
 	}
 	return
 }
+
+// Fill this MCResponse with the data from this reader.
+func (req *MCResponse) Receive(r io.Reader, hdrBytes []byte) error {
+	if len(hdrBytes) < HDR_LEN {
+		hdrBytes = make([]byte, HDR_LEN)
+	}
+	_, err := io.ReadFull(r, hdrBytes)
+	if err != nil {
+		return err
+	}
+
+	if hdrBytes[0] != RES_MAGIC && hdrBytes[0] != REQ_MAGIC {
+		return fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
+	}
+
+	klen := int(binary.BigEndian.Uint16(hdrBytes[2:4]))
+	elen := int(hdrBytes[4])
+
+	req.Opcode = CommandCode(hdrBytes[1])
+	req.Status = Status(binary.BigEndian.Uint16(hdrBytes[6:8]))
+	req.Opaque = binary.BigEndian.Uint32(hdrBytes[12:16])
+	req.Cas = binary.BigEndian.Uint64(hdrBytes[16:24])
+
+	bodyLen := int(binary.BigEndian.Uint32(hdrBytes[8:12])) - (klen + elen)
+
+	buf := make([]byte, klen+elen+bodyLen)
+	_, err = io.ReadFull(r, buf)
+	if err == nil {
+		req.Extras = buf[0:elen]
+		req.Key = buf[elen : klen+elen]
+		req.Body = buf[klen+elen:]
+	}
+
+	return err
+}

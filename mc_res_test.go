@@ -225,3 +225,110 @@ func TestResponseTransmit(t *testing.T) {
 	}
 
 }
+
+func TestReceiveResponse(t *testing.T) {
+	res := MCResponse{
+		Opcode: SET,
+		Status: 74,
+		Opaque: 7242,
+		Extras: []byte{1},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	data := res.Bytes()
+
+	res2 := MCResponse{}
+	err := res2.Receive(bytes.NewReader(data), nil)
+	if err != nil {
+		t.Fatalf("Error receiving: %v", err)
+	}
+
+	if !reflect.DeepEqual(res, res2) {
+		t.Fatalf("Expected %#v == %#v", res, res2)
+	}
+}
+
+func TestReceiveResponseBadMagic(t *testing.T) {
+	res := MCResponse{
+		Opcode: SET,
+		Status: 74,
+		Opaque: 7242,
+		Extras: []byte{1},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	data := res.Bytes()
+	data[0] = 0x13
+
+	res2 := MCResponse{}
+	err := res2.Receive(bytes.NewReader(data), nil)
+	if err == nil {
+		t.Fatalf("Expected error, got: %#v", res2)
+	}
+}
+
+func TestReceiveResponseShortHeader(t *testing.T) {
+	res := MCResponse{
+		Opcode: SET,
+		Status: 74,
+		Opaque: 7242,
+		Extras: []byte{1},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	data := res.Bytes()
+	data[0] = 0x13
+
+	res2 := MCResponse{}
+	err := res2.Receive(bytes.NewReader(data[:13]), nil)
+	if err == nil {
+		t.Fatalf("Expected error, got: %#v", res2)
+	}
+}
+
+func TestReceiveResponseShortBody(t *testing.T) {
+	res := MCResponse{
+		Opcode: SET,
+		Status: 74,
+		Opaque: 7242,
+		Extras: []byte{1},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	data := res.Bytes()
+	data[0] = 0x13
+
+	res2 := MCResponse{}
+	err := res2.Receive(bytes.NewReader(data[:len(data)-3]), nil)
+	if err == nil {
+		t.Fatalf("Expected error, got: %#v", res2)
+	}
+}
+
+func TestReceiveResponseWithBuffer(t *testing.T) {
+	res := MCResponse{
+		Opcode: SET,
+		Status: 74,
+		Opaque: 7242,
+		Extras: []byte{1},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	data := res.Bytes()
+
+	res2 := MCResponse{}
+	buf := make([]byte, HDR_LEN)
+	err := res2.Receive(bytes.NewReader(data), buf)
+	if err != nil {
+		t.Fatalf("Error receiving: %v", err)
+	}
+
+	if !reflect.DeepEqual(res, res2) {
+		t.Fatalf("Expected %#v == %#v", res, res2)
+	}
+}
