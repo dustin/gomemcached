@@ -2,6 +2,7 @@ package gomemcached
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -213,6 +214,28 @@ func TestReceiveRequest(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(req, req2) {
+		t.Fatalf("Expected %#v == %#v", req, req2)
+	}
+}
+
+func TestReceiveRequestNoContent(t *testing.T) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+	}
+
+	data := req.Bytes()
+	data[0] = REQ_MAGIC
+
+	req2 := MCRequest{}
+	err := req2.Receive(bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("Error receiving: %v", err)
+	}
+
+	if fmt.Sprintf("%#v", req) != fmt.Sprintf("%#v", req2) {
 		t.Fatalf("Expected %#v == %#v", req, req2)
 	}
 }
