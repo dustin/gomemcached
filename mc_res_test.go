@@ -3,6 +3,7 @@ package gomemcached
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -329,6 +330,28 @@ func TestReceiveResponseWithBuffer(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(res, res2) {
+		t.Fatalf("Expected %#v == %#v", res, res2)
+	}
+}
+
+func TestReceiveResponseNoContent(t *testing.T) {
+	res := MCResponse{
+		Opcode: SET,
+		Status: 74,
+		Opaque: 7242,
+	}
+
+	data := res.Bytes()
+
+	res2 := MCResponse{}
+	err := res2.Receive(bytes.NewReader(data), nil)
+	if err != nil {
+		t.Fatalf("Error receiving: %v", err)
+	}
+
+	// Can't use reflect here because []byte{} != nil, though they
+	// look the same.
+	if fmt.Sprintf("%#v", res) != fmt.Sprintf("%#v", res2) {
 		t.Fatalf("Expected %#v == %#v", res, res2)
 	}
 }
