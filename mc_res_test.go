@@ -355,3 +355,48 @@ func TestReceiveResponseNoContent(t *testing.T) {
 		t.Fatalf("Expected %#v == %#v", res, res2)
 	}
 }
+
+func BenchmarkReceiveResponse(b *testing.B) {
+	req := MCResponse{
+		Opcode: SET,
+		Status: 183,
+		Cas:    0,
+		Opaque: 7242,
+		Extras: []byte{1},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	data := req.Bytes()
+
+	b.SetBytes(int64(len(data)))
+
+	b.ResetTimer()
+	buf := make([]byte, HDR_LEN)
+	for i := 0; i < b.N; i++ {
+		res2 := MCResponse{}
+		res2.Receive(bytes.NewReader(data), buf)
+	}
+}
+
+func BenchmarkReceiveResponseNoBuf(b *testing.B) {
+	req := MCResponse{
+		Opcode: SET,
+		Status: 183,
+		Cas:    0,
+		Opaque: 7242,
+		Extras: []byte{1},
+		Key:    []byte("somekey"),
+		Body:   []byte("somevalue"),
+	}
+
+	data := req.Bytes()
+
+	b.SetBytes(int64(len(data)))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		res2 := MCResponse{}
+		res2.Receive(bytes.NewReader(data), nil)
+	}
+}
