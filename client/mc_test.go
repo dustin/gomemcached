@@ -251,9 +251,6 @@ func BenchmarkDecodeResponse(b *testing.B) {
 	b.SetBytes(int64(len(buf)))
 
 	for i := 0; i < b.N; i++ {
-		_, err := getResponse(bytes.NewReader(data), buf)
-		if err != nil {
-			b.Fatalf("Error decoding:  %v", err)
-		}
+		getResponse(bytes.NewReader(data), buf)
 	}
 }
