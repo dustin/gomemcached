@@ -78,7 +78,7 @@ func HandleMessage(r io.Reader, w io.Writer, handler RequestHandler) error {
 }
 
 func ReadPacket(r io.Reader) (rv gomemcached.MCRequest, err error) {
-	err = rv.Receive(r)
+	err = rv.Receive(r, nil)
 	return
 }
 

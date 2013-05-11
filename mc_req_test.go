@@ -205,10 +205,9 @@ func TestReceiveRequest(t *testing.T) {
 	}
 
 	data := req.Bytes()
-	data[0] = REQ_MAGIC
 
 	req2 := MCRequest{}
-	err := req2.Receive(bytes.NewReader(data))
+	err := req2.Receive(bytes.NewReader(data), nil)
 	if err != nil {
 		t.Fatalf("Error receiving: %v", err)
 	}
@@ -227,10 +226,9 @@ func TestReceiveRequestNoContent(t *testing.T) {
 	}
 
 	data := req.Bytes()
-	data[0] = REQ_MAGIC
 
 	req2 := MCRequest{}
-	err := req2.Receive(bytes.NewReader(data))
+	err := req2.Receive(bytes.NewReader(data), nil)
 	if err != nil {
 		t.Fatalf("Error receiving: %v", err)
 	}
@@ -242,7 +240,7 @@ func TestReceiveRequestNoContent(t *testing.T) {
 
 func TestReceiveRequestShortHdr(t *testing.T) {
 	req := MCRequest{}
-	err := req.Receive(bytes.NewReader([]byte{1, 2, 3}))
+	err := req.Receive(bytes.NewReader([]byte{1, 2, 3}), nil)
 	if err == nil {
 		t.Fatalf("Expected error, got %#v", req)
 	}
@@ -260,10 +258,9 @@ func TestReceiveRequestShortBody(t *testing.T) {
 	}
 
 	data := req.Bytes()
-	data[0] = REQ_MAGIC
 
 	req2 := MCRequest{}
-	err := req2.Receive(bytes.NewReader(data[:len(data)-3]))
+	err := req2.Receive(bytes.NewReader(data[:len(data)-3]), nil)
 	if err == nil {
 		t.Fatalf("Expected error, got %#v", req2)
 	}
@@ -284,7 +281,7 @@ func TestReceiveRequestBadMagic(t *testing.T) {
 	data[0] = 0x83
 
 	req2 := MCRequest{}
-	err := req2.Receive(bytes.NewReader(data))
+	err := req2.Receive(bytes.NewReader(data), nil)
 	if err == nil {
 		t.Fatalf("Expected error, got %#v", req2)
 	}
@@ -304,7 +301,7 @@ func TestReceiveRequestLongBody(t *testing.T) {
 	data := req.Bytes()
 
 	req2 := MCRequest{}
-	err := req2.Receive(bytes.NewReader(data))
+	err := req2.Receive(bytes.NewReader(data), nil)
 	if err == nil {
 		t.Fatalf("Expected error, got %#v", req2)
 	}
@@ -328,10 +325,39 @@ func BenchmarkReceiveRequest(b *testing.B) {
 	b.SetBytes(int64(len(data)))
 
 	b.ResetTimer()
+	buf := make([]byte, HDR_LEN)
 	for i := 0; i < b.N; i++ {
 		req2 := MCRequest{}
 		rdr.Seek(0, 0)
-		err := req2.Receive(rdr)
+		err := req2.Receive(rdr, buf)
+		if err != nil {
+			b.Fatalf("Error receiving: %v", err)
+		}
+	}
+}
+
+func BenchmarkReceiveRequestNoBuf(b *testing.B) {
+	req := MCRequest{
+		Opcode:  SET,
+		Cas:     0,
+		Opaque:  7242,
+		VBucket: 824,
+		Extras:  []byte{1},
+		Key:     []byte("somekey"),
+		Body:    []byte("somevalue"),
+	}
+
+	data := req.Bytes()
+	data[0] = REQ_MAGIC
+	rdr := bytes.NewReader(data)
+
+	b.SetBytes(int64(len(data)))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		req2 := MCRequest{}
+		rdr.Seek(0, 0)
+		err := req2.Receive(rdr, nil)
 		if err != nil {
 			b.Fatalf("Error receiving: %v", err)
 		}
