@@ -24,7 +24,13 @@ func TestTransmitReq(t *testing.T) {
 		Body:    []byte("somevalue"),
 	}
 
-	err := transmitRequest(buf, &req)
+	// Verify nil transmit is OK
+	err := transmitRequest(nil, &req)
+	if err != noConn {
+		t.Errorf("Expected noConn with no conn, got %v", err)
+	}
+
+	err = transmitRequest(buf, &req)
 	if err != nil {
 		t.Fatalf("Error transmitting request: %v", err)
 	}
@@ -200,6 +206,13 @@ func TestDecodeSpecSample(t *testing.T) {
 
 }
 
+func TestNilReader(t *testing.T) {
+	res, err := getResponse(nil, nil)
+	if err != noConn {
+		t.Fatalf("Expected error reading from nil, got %#v", res)
+	}
+}
+
 func TestDecode(t *testing.T) {
 	data := []byte{
 		gomemcached.RES_MAGIC, byte(gomemcached.SET),
@@ -252,5 +265,19 @@ func BenchmarkDecodeResponse(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		getResponse(bytes.NewReader(data), buf)
+	}
+}
+
+func TestUnwrap(t *testing.T) {
+	res := &gomemcached.MCResponse{}
+
+	_, e := UnwrapMemcachedError(res, res)
+	if e != nil {
+		t.Errorf("Expected error to be nilled, got %v", e)
+	}
+
+	_, e = UnwrapMemcachedError(res, noConn)
+	if e != noConn {
+		t.Errorf("Expected error to come through, got %v", e)
 	}
 }
