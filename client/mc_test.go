@@ -281,3 +281,29 @@ func TestUnwrap(t *testing.T) {
 		t.Errorf("Expected error to come through, got %v", e)
 	}
 }
+
+func panics(f func() interface{}) (got interface{}, panicked bool) {
+	defer func() { panicked = recover() != nil }()
+	return f(), false
+}
+
+func TestCasOpError(t *testing.T) {
+	known := map[CasOp]string{
+		CASStore:  "CAS store",
+		CASQuit:   "CAS quit",
+		CASDelete: "CAS delete",
+	}
+
+	for i := 0; i < 0x100; i++ {
+		c := CasOp(i)
+		if s, ok := known[c]; ok {
+			if s != c.Error() {
+				t.Errorf("Error on %T(%#v), got %v, expected %v", c, c, c.Error(), s)
+			}
+		} else {
+			if got, panicked := panics(func() interface{} { return c.Error() }); !panicked {
+				t.Errorf("Expected panic for %T(%#v), got %v", c, c, got)
+			}
+		}
+	}
+}
