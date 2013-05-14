@@ -114,6 +114,7 @@ func (event TapEvent) String() string {
 			event.Opcode, event.Key, len(event.Value),
 			event.Flags, event.Expiry)
 	}
+	panic("unreachable, but travis still hasn't upgraded")
 }
 
 // Parameters for requesting a TAP feed. Call DefaultTapArguments to
