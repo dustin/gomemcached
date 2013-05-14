@@ -107,27 +107,42 @@ func makeTapEvent(req gomemcached.MCRequest) *TapEvent {
 func (event TapEvent) String() string {
 	switch event.Opcode {
 	case TapBeginBackfill, TapEndBackfill, TapCheckpointStart, TapCheckpointEnd:
-		return fmt.Sprintf("<TapEvent %s, vbucket=%d>", event.Opcode, event.VBucket)
+		return fmt.Sprintf("<TapEvent %s, vbucket=%d>",
+			event.Opcode, event.VBucket)
 	default:
 		return fmt.Sprintf("<TapEvent %s, key=%q (%d bytes) flags=%x, exp=%d>",
-			event.Opcode, event.Key, len(event.Value), event.Flags, event.Expiry)
+			event.Opcode, event.Key, len(event.Value),
+			event.Flags, event.Expiry)
 	}
 }
 
-// Parameters for requesting a TAP feed. Call DefaultTapArguments to get a default one.
+// Parameters for requesting a TAP feed. Call DefaultTapArguments to
+// get a default one.
 type TapArguments struct {
-	Backfill         uint64   // Timestamp of oldest item to send. Use TapNoBackfill to suppress all past items.
-	Dump             bool     // If set, server will disconnect after sending existing items.
-	VBuckets         []uint16 // The indices of the vbuckets to watch; empty/nil to watch all.
-	Takeover         bool     // Transfers ownership of vbuckets during cluster rebalance. Leave false.
-	SupportAck       bool     // If true, server will wait for client ACK after every notification.
-	KeysOnly         bool     // If true, client doesn't want values so server shouldn't send them.
-	Checkpoint       bool     // If true, client wants the server to send checkpoint events.
-	ClientName       string   // Optional identifier to use for this client, to allow reconnects
-	RegisteredClient bool     // Registers this client (by name) till explicitly deregistered.
+	// Timestamp of oldest item to send.
+	//
+	// Use TapNoBackfill to suppress all past items.
+	Backfill uint64
+	// If set, server will disconnect after sending existing items.
+	Dump bool
+	// The indices of the vbuckets to watch; empty/nil to watch all.
+	VBuckets []uint16
+	// Transfers ownership of vbuckets during cluster rebalance.
+	Takeover bool
+	// If true, server will wait for client ACK after every notification.
+	SupportAck bool
+	// If true, client doesn't want values so server shouldn't send them.
+	KeysOnly bool
+	// If true, client wants the server to send checkpoint events.
+	Checkpoint bool
+	// Optional identifier to use for this client, to allow reconnects
+	ClientName string
+	// Registers this client (by name) till explicitly deregistered.
+	RegisteredClient bool
 }
 
-// Value for TapArguments.Backfill denoting that no past events at all should be sent.
+// Value for TapArguments.Backfill denoting that no past events at all
+// should be sent.
 const TapNoBackfill = math.MaxUint64
 
 // Returns a default set of parameter values, to pass to StartTapFeed.
@@ -190,9 +205,10 @@ type TapFeed struct {
 	closer chan bool
 }
 
-// Starts a TAP feed on a client connection. The events can be read from the returned channel.
-// The connection can no longer be used for other purposes; it's now reserved for receiving the
-// TAP messages. To stop receiving events, close the client connection.
+// Starts a TAP feed on a client connection. The events can be read
+// from the returned channel.  The connection can no longer be used
+// for other purposes; it's now reserved for receiving the TAP
+// messages. To stop receiving events, close the client connection.
 func (mc *Client) StartTapFeed(args TapArguments) (*TapFeed, error) {
 	rq := &gomemcached.MCRequest{
 		Opcode: gomemcached.TAP_CONNECT,
@@ -213,14 +229,17 @@ func (mc *Client) StartTapFeed(args TapArguments) (*TapFeed, error) {
 	return feed, nil
 }
 
-// Internal goroutine that reads from the socket and writes events to the channel
+// Internal goroutine that reads from the socket and writes events to
+// the channel
 func (mc *Client) runFeed(ch chan TapEvent, feed *TapFeed) {
 	defer close(ch)
 	var headerBuf [gomemcached.HDR_LEN]byte
 loop:
 	for {
 		// Read the next request from the server.
-		//  (Can't call mc.Receive() because it reads a _response_ not a request.)
+		//
+		//  (Can't call mc.Receive() because it reads a
+		//  _response_ not a request.)
 		var pkt gomemcached.MCRequest
 		err := pkt.Receive(mc.conn, headerBuf[:])
 
@@ -234,7 +253,8 @@ loop:
 		//log.Printf("** TapFeed received %#v : %q", pkt, pkt.Body)
 
 		if pkt.Opcode == gomemcached.TAP_CONNECT {
-			// This is not an event from the server; it's an error response to my connect request.
+			// This is not an event from the server; it's
+			// an error response to my connect request.
 			feed.Error = fmt.Errorf("Tap connection failed: %s", pkt.Body)
 			break loop
 		}
@@ -242,14 +262,12 @@ loop:
 		event := makeTapEvent(pkt)
 		if event != nil {
 			if event.Opcode == tapEndStream {
-				//log.Printf("TapFeed: Closing due to event %#v", event)
 				break loop
 			}
 
 			select {
 			case ch <- *event:
 			case <-feed.closer:
-				//log.Printf("TapFeed: Closing due to close request")
 				break loop
 			}
 		}
@@ -273,7 +291,8 @@ func (mc *Client) sendAck(pkt *gomemcached.MCRequest) {
 	res.Transmit(mc.conn)
 }
 
-// Closes a TapFeed. Call this if you stop using a TapFeed before its channel ends.
+// Closes a TapFeed. Call this if you stop using a TapFeed before its
+// channel ends.
 func (feed *TapFeed) Close() {
 	feed.closer <- true
 	close(feed.closer)
