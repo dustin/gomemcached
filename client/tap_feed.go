@@ -294,6 +294,5 @@ func (mc *Client) sendAck(pkt *gomemcached.MCRequest) {
 // Closes a TapFeed. Call this if you stop using a TapFeed before its
 // channel ends.
 func (feed *TapFeed) Close() {
-	feed.closer <- true
 	close(feed.closer)
 }
