@@ -363,3 +363,30 @@ func BenchmarkReceiveRequestNoBuf(b *testing.B) {
 		}
 	}
 }
+
+func TestReceivingTapRequest(t *testing.T) {
+	content := []byte{
+		REQ_MAGIC, byte(TAP_MUTATION),
+		0x0, 0x7, // length of key
+		0x2,       // extra length
+		0x0,       // reserved
+		0x3, 0x38, // vbucket
+		0x0, 0x0, 0x0, 0x16, // Length of value
+		0x0, 0x0, 0x1c, 0x4a, // opaque
+		0x0, 0x0, 0x0, 0x0, 0x37, 0xef, 0x3a, 0x35, // CAS
+		0, 4, // extra (describes length of engine specific
+		1, 2, 3, 4, // engine specific junk
+		's', 'o', 'm', 'e', 'k', 'e', 'y',
+		's', 'o', 'm', 'e', 'v', 'a', 'l', 'u', 'e'}
+
+	req := MCRequest{}
+	err := req.Receive(bytes.NewReader(content), nil)
+	if err != nil {
+		t.Fatalf("Failed to parse response.")
+	}
+
+	exp := `{MCRequest opcode=TAP_MUTATION, bodylen=9, key='somekey'}`
+	if req.String() != exp {
+		t.Errorf("Expected string=%q, got %q", exp, req.String())
+	}
+}
