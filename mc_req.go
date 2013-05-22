@@ -148,7 +148,9 @@ func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) error {
 	buf := make([]byte, klen+elen+bodyLen)
 	_, err = io.ReadFull(r, buf)
 	if err == nil {
-		if req.Opcode >= TAP_MUTATION && req.Opcode <= TAP_CHECKPOINT_END {
+		if len(buf) > 1 &&
+			req.Opcode >= TAP_MUTATION &&
+			req.Opcode <= TAP_CHECKPOINT_END {
 			// In these commands there is "engine private"
 			// data at the end of the extras.  The first 2
 			// bytes of extra data give its length.
