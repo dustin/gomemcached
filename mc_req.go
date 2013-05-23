@@ -119,7 +119,10 @@ func (req *MCRequest) Transmit(w io.Writer) (err error) {
 // Fill this MCRequest with the data from this reader.
 func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) error {
 	if len(hdrBytes) < HDR_LEN {
-		hdrBytes = make([]byte, HDR_LEN)
+		hdrBytes = []byte{
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0}
 	}
 	_, err := io.ReadFull(r, hdrBytes)
 	if err != nil {
