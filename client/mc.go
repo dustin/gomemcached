@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/dustin/gomemcached"
 )
@@ -226,6 +228,78 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 	wg.Wait()
 
 	return rv, nil
+}
+
+// Value status reported by the Observe method
+type ObservedStatus uint8
+
+const (
+	ObservedNotPersisted     = ObservedStatus(0x00) // found, not persisted
+	ObservedPersisted        = ObservedStatus(0x01) // found, persisted
+	ObservedNotFound         = ObservedStatus(0x80) // not found (or a persisted delete)
+	ObservedLogicallyDeleted = ObservedStatus(0x81) // pending deletion (not persisted yet)
+)
+
+// Data obtained by an Observe call
+type ObserveResult struct {
+	Status          ObservedStatus // Whether the value has been persisted/deleted
+	Cas             uint64         // Current value's CAS
+	PersistenceTime time.Duration  // Node's average time to persist a value
+	ReplicationTime time.Duration  // Node's average time to replicate a value
+}
+
+// Gets the persistence/replication/CAS state of a key
+func (client *Client) Observe(vb uint16, key string) (result ObserveResult, err error) {
+	// http://www.couchbase.com/wiki/display/couchbase/Observe
+	body := make([]byte, 4+len(key))
+	binary.BigEndian.PutUint16(body[0:2], vb)
+	binary.BigEndian.PutUint16(body[2:4], uint16(len(key)))
+	copy(body[4:4+len(key)], key)
+
+	res, err := client.Send(&gomemcached.MCRequest{
+		Opcode:  gomemcached.OBSERVE,
+		VBucket: vb,
+		Body:    body,
+	})
+	if err != nil {
+		return
+	}
+
+	// Parse the response data from the body:
+	if len(res.Body) < 2+2+1 {
+		err = io.ErrUnexpectedEOF
+		return
+	}
+	outVb := binary.BigEndian.Uint16(res.Body[0:2])
+	keyLen := binary.BigEndian.Uint16(res.Body[2:4])
+	if len(res.Body) < 2+2+int(keyLen)+1+8 {
+		err = io.ErrUnexpectedEOF
+		return
+	}
+	outKey := string(res.Body[4 : 4+keyLen])
+	if outVb != vb || outKey != key {
+		err = fmt.Errorf("Observe returned wrong vbucket/key: %d/%q", outVb, outKey)
+		return
+	}
+	result.Status = ObservedStatus(res.Body[4+keyLen])
+	result.Cas = binary.BigEndian.Uint64(res.Body[5+keyLen:])
+	// The response reuses the Cas field to store time statistics:
+	result.PersistenceTime = time.Duration(res.Cas>>32) * time.Millisecond
+	result.ReplicationTime = time.Duration(res.Cas&math.MaxUint32) * time.Millisecond
+	return
+}
+
+// Checks whether a stored value has been persisted to disk yet.
+func (result ObserveResult) CheckPersistence(cas uint64, deletion bool) (persisted bool, overwritten bool) {
+	switch {
+	case result.Status == ObservedNotFound && deletion:
+		persisted = true
+	case result.Cas != cas:
+		overwritten = true
+	case result.Status == ObservedPersisted:
+		persisted = true
+	}
+	return
 }
 
 // Operation to perform on this CAS loop.
