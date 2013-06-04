@@ -360,7 +360,7 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 				if resp.Status != gomemcached.SUCCESS {
 					return nil, resp
 				}
-				return nil, nil
+				return resp, nil
 			}
 		} else {
 			var req *gomemcached.MCRequest
