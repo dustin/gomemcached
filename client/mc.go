@@ -269,7 +269,8 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 
 	for {
 		orig, err := client.Get(vb, k)
-		if err != nil && (orig == nil || orig.Status != gomemcached.KEY_ENOENT) {
+		if err != nil && (orig == nil ||
+			orig.Status != gomemcached.KEY_ENOENT) {
 			return orig, err
 		}
 
@@ -279,7 +280,8 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 				return nil, operation
 			}
 			// If it doesn't exist, add it
-			resp, err := UnwrapMemcachedError(client.Add(vb, k, 0, initexp, init))
+			resp, err := UnwrapMemcachedError(client.Add(vb, k, 0,
+				initexp, init))
 			if err == nil && resp.Status != gomemcached.KEY_EEXISTS {
 				if resp.Status != gomemcached.SUCCESS {
 					return nil, resp
@@ -318,7 +320,6 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 			}
 		}
 	}
-	panic("Unreachable")
 }
 
 // Stats returns a slice of these.
