@@ -74,6 +74,10 @@ func makeTapEvent(req gomemcached.MCRequest) *TapEvent {
 	case gomemcached.TAP_CHECKPOINT_END:
 		event.Opcode = TapCheckpointEnd
 	case gomemcached.TAP_OPAQUE:
+		if len(req.Extras) < 8+4 {
+			log.Printf("TapFeed: Ignoring TAP_OPAQUE, extras: %x", req.Extras)
+			return nil
+		}
 		switch op := int(binary.BigEndian.Uint32(req.Extras[8:])); op {
 		case gomemcached.TAP_OPAQUE_INITIAL_VBUCKET_STREAM:
 			event.Opcode = TapBeginBackfill
