@@ -75,7 +75,6 @@ func makeTapEvent(req gomemcached.MCRequest) *TapEvent {
 		event.Opcode = TapCheckpointEnd
 	case gomemcached.TAP_OPAQUE:
 		if len(req.Extras) < 8+4 {
-			log.Printf("TapFeed: Ignoring TAP_OPAQUE, extras: %x", req.Extras)
 			return nil
 		}
 		switch op := int(binary.BigEndian.Uint32(req.Extras[8:])); op {
