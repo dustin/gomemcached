@@ -353,12 +353,7 @@ func (client *Client) CASNext(vb uint16, k string, exp int, state *CASState) boo
 				state.Cas = 0
 				return false // no-op (delete of non-existent value)
 			}
-			state.resp, state.Err = UnwrapMemcachedError(client.Add(vb, k, 0, exp, state.Value))
-			if state.Err != nil {
-				return false
-			} else if state.resp.Status == gomemcached.SUCCESS {
-				return false // Successful add
-			}
+			state.resp, state.Err = client.Add(vb, k, 0, exp, state.Value)
 		} else {
 			// Updating / deleting a key:
 			req := &gomemcached.MCRequest{
@@ -376,9 +371,14 @@ func (client *Client) CASNext(vb uint16, k string, exp int, state *CASState) boo
 				exp := 0 // ??? Should we use initialexp here instead?
 				binary.BigEndian.PutUint64(req.Extras, uint64(flags)<<32|uint64(exp))
 			}
-			if state.resp, state.Err = client.Send(req); state.Err == nil {
-				return false // Successful update or delete!
-			}
+			state.resp, state.Err = client.Send(req)
+		}
+
+		// If the response status is KEY_EEXISTS or NOT_STORED there's a conflict and we'll need to
+		// get the new value (below). Otherwise, we're done (either success or failure) so return:
+		if !(state.resp != nil && (state.resp.Status == gomemcached.KEY_EEXISTS ||
+			state.resp.Status == gomemcached.NOT_STORED)) {
+			return false // either success or fatal error
 		}
 	}
 
@@ -394,7 +394,7 @@ func (client *Client) CASNext(vb uint16, k string, exp int, state *CASState) boo
 		state.Value = nil
 		state.Cas = 0
 	} else {
-		return false
+		return false // fatal error
 	}
 	return true // keep going...
 }
