@@ -199,8 +199,8 @@ func TestIsFatal(t *testing.T) {
 		{&MCResponse{}, true},
 		{MCResponse{Status: KEY_ENOENT}, false},
 		{&MCResponse{Status: KEY_ENOENT}, false},
-		{MCResponse{Status: EINVAL}, false},
-		{&MCResponse{Status: EINVAL}, false},
+		{MCResponse{Status: EINVAL}, true},
+		{&MCResponse{Status: EINVAL}, true},
 		{MCResponse{Status: TMPFAIL}, false},
 		{&MCResponse{Status: TMPFAIL}, false},
 	}
