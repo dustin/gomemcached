@@ -56,7 +56,7 @@ func IsFatal(e error) bool {
 		return false
 	}
 	switch errStatus(e) {
-	case KEY_ENOENT, KEY_EEXISTS, EINVAL, NOT_STORED, TMPFAIL:
+	case KEY_ENOENT, KEY_EEXISTS, NOT_STORED, TMPFAIL:
 		return false
 	}
 	return true
