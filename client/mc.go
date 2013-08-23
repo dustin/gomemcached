@@ -378,6 +378,7 @@ func (client *Client) CASNext(vb uint16, k string, exp int, state *CASState) boo
 		// get the new value (below). Otherwise, we're done (either success or failure) so return:
 		if !(state.resp != nil && (state.resp.Status == gomemcached.KEY_EEXISTS ||
 			state.resp.Status == gomemcached.NOT_STORED)) {
+			state.Cas = state.resp.Cas
 			return false // either success or fatal error
 		}
 	}
