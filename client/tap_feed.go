@@ -26,6 +26,8 @@ const (
 	tapEndStream
 )
 
+const tapMutationExtraLen = 16
+
 var tapOpcodeNames map[TapOpcode]string
 
 func init() {
@@ -99,7 +101,9 @@ func makeTapEvent(req gomemcached.MCRequest) *TapEvent {
 		return nil // unknown event
 	}
 
-	if event.Opcode == TapMutation || event.Opcode == TapDeletion {
+	if len(req.Extras) >= tapMutationExtraLen &&
+		(event.Opcode == TapMutation || event.Opcode == TapDeletion) {
+
 		event.Flags = binary.BigEndian.Uint32(req.Extras[8:])
 		event.Expiry = binary.BigEndian.Uint32(req.Extras[12:])
 	}
@@ -218,6 +222,7 @@ func (mc *Client) StartTapFeed(args TapArguments) (*TapFeed, error) {
 		Key:    []byte(args.ClientName),
 		Extras: args.flags(),
 		Body:   args.bytes()}
+
 	err := mc.Transmit(rq)
 	if err != nil {
 		return nil, err
