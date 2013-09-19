@@ -9,7 +9,6 @@ import (
 	"math"
 	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/dustin/gomemcached"
@@ -180,19 +179,20 @@ func (client *Client) Set(vb uint16, key string, flags int, exp int,
 func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCResponse, error) {
 	terminalOpaque := uint32(len(keys) + 5)
 	rv := map[string]*gomemcached.MCResponse{}
-	wg := sync.WaitGroup{}
 	going := true
 
 	defer func() {
 		going = false
 	}()
 
-	wg.Add(1)
+	errch := make(chan error, 2)
+
 	go func() {
-		defer wg.Done()
+		defer func() { errch <- nil }()
 		for going {
 			res, err := client.Receive()
 			if err != nil {
+				errch <- err
 				return
 			}
 			if res.Opaque == terminalOpaque {
@@ -225,9 +225,7 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 		return rv, err
 	}
 
-	wg.Wait()
-
-	return rv, nil
+	return rv, <-errch
 }
 
 // Value status reported by the Observe method
