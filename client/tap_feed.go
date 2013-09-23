@@ -57,6 +57,7 @@ type TapEvent struct {
 	Flags      uint32    // Item flags
 	Expiry     uint32    // Item expiration time
 	Key, Value []byte    // Item key/value
+	Cas        uint64
 }
 
 func makeTapEvent(req gomemcached.MCRequest) *TapEvent {
@@ -68,9 +69,11 @@ func makeTapEvent(req gomemcached.MCRequest) *TapEvent {
 		event.Opcode = TapMutation
 		event.Key = req.Key
 		event.Value = req.Body
+		event.Cas = req.Cas
 	case gomemcached.TAP_DELETE:
 		event.Opcode = TapDeletion
 		event.Key = req.Key
+		event.Cas = req.Cas
 	case gomemcached.TAP_CHECKPOINT_START:
 		event.Opcode = TapCheckpointStart
 	case gomemcached.TAP_CHECKPOINT_END:
