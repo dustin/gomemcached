@@ -175,9 +175,7 @@ func TestIsNotFound(t *testing.T) {
 	}{
 		{nil, false},
 		{errors.New("something"), false},
-		{MCResponse{}, false},
 		{&MCResponse{}, false},
-		{MCResponse{Status: KEY_ENOENT}, true},
 		{&MCResponse{Status: KEY_ENOENT}, true},
 	}
 
@@ -195,13 +193,9 @@ func TestIsFatal(t *testing.T) {
 	}{
 		{nil, false},
 		{errors.New("something"), true},
-		{MCResponse{}, true},
 		{&MCResponse{}, true},
-		{MCResponse{Status: KEY_ENOENT}, false},
 		{&MCResponse{Status: KEY_ENOENT}, false},
-		{MCResponse{Status: EINVAL}, true},
 		{&MCResponse{Status: EINVAL}, true},
-		{MCResponse{Status: TMPFAIL}, false},
 		{&MCResponse{Status: TMPFAIL}, false},
 	}
 

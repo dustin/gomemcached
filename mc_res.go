@@ -29,16 +29,13 @@ func (res MCResponse) String() string {
 }
 
 // Response as an error.
-func (res MCResponse) Error() string {
+func (res *MCResponse) Error() string {
 	return fmt.Sprintf("MCResponse status=%v, opcode=%v, opaque=%v, msg: %s",
 		res.Status, res.Opcode, res.Opaque, string(res.Body))
 }
 
 func errStatus(e error) Status {
 	status := Status(0xffff)
-	if res, ok := e.(MCResponse); ok {
-		status = res.Status
-	}
 	if res, ok := e.(*MCResponse); ok {
 		status = res.Status
 	}
