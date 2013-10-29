@@ -175,6 +175,19 @@ func (client *Client) Set(vb uint16, key string, flags int, exp int,
 	return client.store(gomemcached.SET, vb, key, flags, exp, body)
 }
 
+// Append data to the value of a key.
+func (client *Client) Append(vb uint16, key string, data []byte) (*gomemcached.MCResponse, error) {
+	req := &gomemcached.MCRequest{
+		Opcode:  gomemcached.APPEND,
+		VBucket: vb,
+		Key:     []byte(key),
+		Cas:     0,
+		Opaque:  0,
+		Body:    data}
+
+	return client.Send(req)
+}
+
 // Get keys in bulk
 func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCResponse, error) {
 	terminalOpaque := uint32(len(keys) + 5)
