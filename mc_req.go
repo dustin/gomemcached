@@ -142,7 +142,7 @@ func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) error {
 	bodyLen := int(binary.BigEndian.Uint32(hdrBytes[8:]) -
 		uint32(klen) - uint32(elen))
 	if bodyLen > MaxBodyLen {
-		return fmt.Errorf("%d is too big (max %s)",
+		return fmt.Errorf("%d is too big (max %d)",
 			bodyLen, MaxBodyLen)
 	}
 	req.Opaque = binary.BigEndian.Uint32(hdrBytes[12:])
