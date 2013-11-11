@@ -26,8 +26,8 @@ func TestTransmitReq(t *testing.T) {
 
 	// Verify nil transmit is OK
 	err := transmitRequest(nil, &req)
-	if err != noConn {
-		t.Errorf("Expected noConn with no conn, got %v", err)
+	if err != errNoConn {
+		t.Errorf("Expected errNoConn with no conn, got %v", err)
 	}
 
 	err = transmitRequest(buf, &req)
@@ -208,7 +208,7 @@ func TestDecodeSpecSample(t *testing.T) {
 
 func TestNilReader(t *testing.T) {
 	res, err := getResponse(nil, nil)
-	if err != noConn {
+	if err != errNoConn {
 		t.Fatalf("Expected error reading from nil, got %#v", res)
 	}
 }
@@ -276,8 +276,8 @@ func TestUnwrap(t *testing.T) {
 		t.Errorf("Expected error to be nilled, got %v", e)
 	}
 
-	_, e = UnwrapMemcachedError(res, noConn)
-	if e != noConn {
+	_, e = UnwrapMemcachedError(res, errNoConn)
+	if e != errNoConn {
 		t.Errorf("Expected error to come through, got %v", e)
 	}
 }

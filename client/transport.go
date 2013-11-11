@@ -7,7 +7,7 @@ import (
 	"github.com/dustin/gomemcached"
 )
 
-var noConn = errors.New("No connection")
+var errNoConn = errors.New("no connection")
 
 // UnwrapMemcachedError converts memcached errors to normal responses.
 //
@@ -25,7 +25,7 @@ func UnwrapMemcachedError(rv *gomemcached.MCResponse,
 
 func getResponse(s io.Reader, hdrBytes []byte) (rv *gomemcached.MCResponse, err error) {
 	if s == nil {
-		return nil, noConn
+		return nil, errNoConn
 	}
 
 	rv = &gomemcached.MCResponse{}
@@ -39,7 +39,7 @@ func getResponse(s io.Reader, hdrBytes []byte) (rv *gomemcached.MCResponse, err 
 
 func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
 	if o == nil {
-		return noConn
+		return errNoConn
 	}
 	return req.Transmit(o)
 }

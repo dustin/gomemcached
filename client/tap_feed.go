@@ -271,7 +271,7 @@ loop:
 		if pkt.Opcode == gomemcached.TAP_CONNECT {
 			// This is not an event from the server; it's
 			// an error response to my connect request.
-			feed.Error = fmt.Errorf("Tap connection failed: %s", pkt.Body)
+			feed.Error = fmt.Errorf("tap connection failed: %s", pkt.Body)
 			break loop
 		}
 
