@@ -32,6 +32,12 @@ func (rh *reqHandler) HandleMessage(w io.Writer, req *gomemcached.MCRequest) *go
 	return <-cr.res
 }
 
+func connectionHandler(s net.Conn, h memcached.RequestHandler) {
+	// Explicitly ignoring errors since they all result in the
+	// client getting hung up on and many are common.
+	_ = memcached.HandleIO(s, h)
+}
+
 func waitForConnections(ls net.Listener) {
 	reqChannel := make(chan chanReq)
 
@@ -43,7 +49,7 @@ func waitForConnections(ls net.Listener) {
 		s, e := ls.Accept()
 		if e == nil {
 			log.Printf("Got a connection from %v", s.RemoteAddr())
-			go memcached.HandleIO(s, handler)
+			go connectionHandler(s, handler)
 		} else {
 			log.Printf("Error accepting from %s", ls)
 		}

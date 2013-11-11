@@ -40,10 +40,16 @@ func FuncHandler(f func(io.Writer, *gomemcached.MCRequest) *gomemcached.MCRespon
 	return funcHandler(f)
 }
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Handle until the handler returns a fatal message or a read or write
 // on the socket fails.
 func HandleIO(s io.ReadWriteCloser, handler RequestHandler) error {
-	defer s.Close()
+	defer func() { must(s.Close()) }()
 	var err error
 	for err == nil {
 		err = HandleMessage(s, s, handler)

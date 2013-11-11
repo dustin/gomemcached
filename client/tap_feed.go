@@ -196,17 +196,23 @@ func (args *TapArguments) flags() []byte {
 	return encoded
 }
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (args *TapArguments) bytes() (rv []byte) {
 	buf := bytes.NewBuffer([]byte{})
 
 	if args.Backfill > 0 {
-		binary.Write(buf, binary.BigEndian, uint64(args.Backfill))
+		must(binary.Write(buf, binary.BigEndian, uint64(args.Backfill)))
 	}
 
 	if len(args.VBuckets) > 0 {
-		binary.Write(buf, binary.BigEndian, uint16(len(args.VBuckets)))
+		must(binary.Write(buf, binary.BigEndian, uint16(len(args.VBuckets))))
 		for i := 0; i < len(args.VBuckets); i++ {
-			binary.Write(buf, binary.BigEndian, uint16(args.VBuckets[i]))
+			must(binary.Write(buf, binary.BigEndian, uint16(args.VBuckets[i])))
 		}
 	}
 	return buf.Bytes()
@@ -292,20 +298,25 @@ loop:
 		if len(pkt.Extras) >= 4 {
 			reqFlags := binary.BigEndian.Uint16(pkt.Extras[2:])
 			if reqFlags&gomemcached.TAP_ACK != 0 {
-				mc.sendAck(&pkt)
+				if err := mc.sendAck(&pkt); err != nil {
+					feed.Error = err
+					break loop
+				}
 			}
 		}
 	}
-	mc.Close()
+	if err := mc.Close(); err != nil {
+		log.Printf("Error closing memcached client:  %v", err)
+	}
 }
 
-func (mc *Client) sendAck(pkt *gomemcached.MCRequest) {
+func (mc *Client) sendAck(pkt *gomemcached.MCRequest) error {
 	res := gomemcached.MCResponse{
 		Opcode: pkt.Opcode,
 		Opaque: pkt.Opaque,
 		Status: gomemcached.SUCCESS,
 	}
-	res.Transmit(mc.conn)
+	return res.Transmit(mc.conn)
 }
 
 // Close terminates a TapFeed.

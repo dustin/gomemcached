@@ -43,8 +43,8 @@ func Wrap(rwc io.ReadWriteCloser) (rv *Client, err error) {
 }
 
 // Close the connection when you're done.
-func (c *Client) Close() {
-	c.conn.Close()
+func (c *Client) Close() error {
+	return c.conn.Close()
 }
 
 // IsHealthy returns true unless the client is belived to have
