@@ -1,4 +1,4 @@
-// A memcached binary protocol client.
+// Package memcached provides a memcached binary protocol client.
 package memcached
 
 import (
@@ -47,7 +47,8 @@ func (c *Client) Close() {
 	c.conn.Close()
 }
 
-// Return false if this client has had issues communicating.
+// IsHealthy returns true unless the client is belived to have
+// difficulty communicating to its server.
 //
 // This is useful for connection pools where we want to
 // non-destructively determine that a connection may be reused.
@@ -67,7 +68,7 @@ func (client *Client) Send(req *gomemcached.MCRequest) (rv *gomemcached.MCRespon
 	return resp, err
 }
 
-// Send a request, but do not wait for a response.
+// Transmit send a request, but does not wait for a response.
 func (client *Client) Transmit(req *gomemcached.MCRequest) error {
 	err := transmitRequest(client.conn, req)
 	if err != nil {
@@ -94,7 +95,7 @@ func (client *Client) Get(vb uint16, key string) (*gomemcached.MCResponse, error
 	})
 }
 
-// Delete a key.
+// Del deletes a key.
 func (client *Client) Del(vb uint16, key string) (*gomemcached.MCResponse, error) {
 	return client.Send(&gomemcached.MCRequest{
 		Opcode:  gomemcached.DELETE,
@@ -102,12 +103,13 @@ func (client *Client) Del(vb uint16, key string) (*gomemcached.MCResponse, error
 		Key:     []byte(key)})
 }
 
-// List auth mechanisms
+// AuthList lists SASL auth mechanisms.
 func (client *Client) AuthList() (*gomemcached.MCResponse, error) {
 	return client.Send(&gomemcached.MCRequest{
 		Opcode: gomemcached.SASL_LIST_MECHS})
 }
 
+// Auth performs SASL PLAIN authentication against the server.
 func (client *Client) Auth(user, pass string) (*gomemcached.MCResponse, error) {
 	res, err := client.AuthList()
 
@@ -141,7 +143,7 @@ func (client *Client) store(opcode gomemcached.CommandCode, vb uint16,
 	return client.Send(req)
 }
 
-// Increment a value.
+// Incr increments the value at the given key.
 func (client *Client) Incr(vb uint16, key string,
 	amt, def uint64, exp int) (uint64, error) {
 
@@ -188,7 +190,7 @@ func (client *Client) Append(vb uint16, key string, data []byte) (*gomemcached.M
 	return client.Send(req)
 }
 
-// Get keys in bulk
+// GetBulk gets keys in bulk
 func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCResponse, error) {
 	terminalOpaque := uint32(len(keys) + 5)
 	rv := map[string]*gomemcached.MCResponse{}
@@ -241,7 +243,7 @@ func (client *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached
 	return rv, <-errch
 }
 
-// Value status reported by the Observe method
+// ObservedStatus is the type reported by the Observe method
 type ObservedStatus uint8
 
 const (
@@ -251,7 +253,7 @@ const (
 	ObservedLogicallyDeleted = ObservedStatus(0x81) // pending deletion (not persisted yet)
 )
 
-// Data obtained by an Observe call
+// ObserveResult represents the data obtained by an Observe call
 type ObserveResult struct {
 	Status          ObservedStatus // Whether the value has been persisted/deleted
 	Cas             uint64         // Current value's CAS
@@ -259,7 +261,7 @@ type ObserveResult struct {
 	ReplicationTime time.Duration  // Node's average time to replicate a value
 }
 
-// Gets the persistence/replication/CAS state of a key
+// Observe gets the persistence/replication/CAS state of a key
 func (client *Client) Observe(vb uint16, key string) (result ObserveResult, err error) {
 	// http://www.couchbase.com/wiki/display/couchbase/Observe
 	body := make([]byte, 4+len(key))
@@ -300,7 +302,7 @@ func (client *Client) Observe(vb uint16, key string) (result ObserveResult, err 
 	return
 }
 
-// Checks whether a stored value has been persisted to disk yet.
+// CheckPersistence checks whether a stored value has been persisted to disk yet.
 func (result ObserveResult) CheckPersistence(cas uint64, deletion bool) (persisted bool, overwritten bool) {
 	switch {
 	case result.Status == ObservedNotFound && deletion:
@@ -313,15 +315,15 @@ func (result ObserveResult) CheckPersistence(cas uint64, deletion bool) (persist
 	return
 }
 
-// Operation to perform on this CAS loop.
+// CasOp is the type of operation to perform on this CAS loop.
 type CasOp uint8
 
 const (
-	// Store the new value normally
+	// CASStore instructs the server to store the new value normally
 	CASStore = CasOp(iota)
-	// Stop attempting to CAS, leave value untouched
+	// CASQuit instructs the client to stop attempting to CAS, leaving value untouched
 	CASQuit
-	// Delete the current value
+	// CASDelete instructs the server to delete the current value
 	CASDelete
 )
 
@@ -340,6 +342,9 @@ func (c CasOp) Error() string {
 
 //////// CAS TRANSFORM
 
+// CASState tracks the state of CAS over several operations.
+//
+// This is used directly by CASNext and indirectly by CAS
 type CASState struct {
 	initialized bool   // false on the first call to CASNext, then true
 	Value       []byte // Current value of key; update in place to new value
@@ -349,7 +354,9 @@ type CASState struct {
 	resp        *gomemcached.MCResponse
 }
 
-// Non-callback, loop-based version of CAS method. Usage is like this:
+// CASNext is a non-callback, loop-based version of CAS method.
+//
+//  Usage is like this:
 //
 // var state memcached.CASState
 // for client.CASNext(vb, key, exp, &state) {
@@ -411,12 +418,13 @@ func (client *Client) CASNext(vb uint16, k string, exp int, state *CASState) boo
 	return true // keep going...
 }
 
-// A function to perform a CAS transform.
+// CasFunc is type type of function to perform a CAS transform.
+//
 // Input is the current value, or nil if no value exists.
 // The function should return the new value (if any) to set, and the store/quit/delete operation.
 type CasFunc func(current []byte) ([]byte, CasOp)
 
-// Perform a CAS transform with the given function.
+// CAS performs a CAS transform with the given function.
 //
 // If the value does not exist, a nil current value will be sent to f.
 func (client *Client) CAS(vb uint16, k string, f CasFunc,
@@ -432,7 +440,7 @@ func (client *Client) CAS(vb uint16, k string, f CasFunc,
 	return state.resp, state.Err
 }
 
-// Stats returns a slice of these.
+// StatValue is one of the stats returned from the Stats method.
 type StatValue struct {
 	// The stat key
 	Key string
@@ -440,7 +448,8 @@ type StatValue struct {
 	Val string
 }
 
-// Get stats from the server
+// Stats requests server-side stats.
+//
 // use "" as the stat key for toplevel stats.
 func (client *Client) Stats(key string) ([]StatValue, error) {
 	rv := make([]StatValue, 0, 128)
@@ -474,7 +483,8 @@ func (client *Client) Stats(key string) ([]StatValue, error) {
 	return rv, nil
 }
 
-// Get the stats from the server as a map
+// StatsMap requests server-side stats similarly to Stats, but returns
+// them as a map.
 func (client *Client) StatsMap(key string) (map[string]string, error) {
 	rv := make(map[string]string)
 	st, err := client.Stats(key)

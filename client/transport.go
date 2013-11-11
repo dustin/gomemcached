@@ -9,6 +9,8 @@ import (
 
 var noConn = errors.New("No connection")
 
+// UnwrapMemcachedError converts memcached errors to normal responses.
+//
 // If the error is a memcached response, declare the error to be nil
 // so a client can handle the status without worrying about whether it
 // indicates success or failure.

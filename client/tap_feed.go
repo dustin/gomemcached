@@ -13,7 +13,7 @@ import (
 
 // TAP protocol docs: <http://www.couchbase.com/wiki/display/couchbase/TAP+Protocol>
 
-// Tap operation type (found in TapEvent)
+// TapOpcode is the tap operation type (found in TapEvent)
 type TapOpcode uint8
 
 const (
@@ -50,7 +50,7 @@ func (opcode TapOpcode) String() string {
 	return name
 }
 
-// A TAP notification of an operation on the server.
+// TapEvent is a TAP notification of an operation on the server.
 type TapEvent struct {
 	Opcode     TapOpcode // Type of event
 	VBucket    uint16    // VBucket this event applies to
@@ -126,8 +126,9 @@ func (event TapEvent) String() string {
 	}
 }
 
-// Parameters for requesting a TAP feed. Call DefaultTapArguments to
-// get a default one.
+// TapArguments are parameters for requesting a TAP feed.
+//
+// Call DefaultTapArguments to get a default one.
 type TapArguments struct {
 	// Timestamp of oldest item to send.
 	//
@@ -155,7 +156,8 @@ type TapArguments struct {
 // should be sent.
 const TapNoBackfill = math.MaxUint64
 
-// Returns a default set of parameter values, to pass to StartTapFeed.
+// DefaultTapArguments returns a default set of parameter values to
+// pass to StartTapFeed.
 func DefaultTapArguments() TapArguments {
 	return TapArguments{
 		Backfill: TapNoBackfill,
@@ -209,16 +211,19 @@ func (args *TapArguments) bytes() (rv []byte) {
 	return buf.Bytes()
 }
 
+// TapFeed represents a stream of events from a server.
 type TapFeed struct {
 	C      <-chan TapEvent
 	Error  error
 	closer chan bool
 }
 
-// Starts a TAP feed on a client connection. The events can be read
-// from the returned channel.  The connection can no longer be used
-// for other purposes; it's now reserved for receiving the TAP
-// messages. To stop receiving events, close the client connection.
+// StartTapFeed starts a TAP feed on a client connection.
+//
+// The events can be read from the returned channel.  The connection
+// can no longer be used for other purposes; it's now reserved for
+// receiving the TAP messages. To stop receiving events, close the
+// client connection.
 func (mc *Client) StartTapFeed(args TapArguments) (*TapFeed, error) {
 	rq := &gomemcached.MCRequest{
 		Opcode: gomemcached.TAP_CONNECT,
@@ -302,8 +307,9 @@ func (mc *Client) sendAck(pkt *gomemcached.MCRequest) {
 	res.Transmit(mc.conn)
 }
 
-// Closes a TapFeed. Call this if you stop using a TapFeed before its
-// channel ends.
+// Close terminates a TapFeed.
+//
+//  Call this if you stop using a TapFeed before its channel ends.
 func (feed *TapFeed) Close() {
 	close(feed.closer)
 }
