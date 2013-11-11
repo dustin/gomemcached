@@ -246,6 +246,7 @@ func (c *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCRe
 // ObservedStatus is the type reported by the Observe method
 type ObservedStatus uint8
 
+// Observation status values.
 const (
 	ObservedNotPersisted     = ObservedStatus(0x00) // found, not persisted
 	ObservedPersisted        = ObservedStatus(0x01) // found, persisted

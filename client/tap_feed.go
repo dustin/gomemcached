@@ -16,6 +16,7 @@ import (
 // TapOpcode is the tap operation type (found in TapEvent)
 type TapOpcode uint8
 
+// Tap opcode values.
 const (
 	TapBeginBackfill = TapOpcode(iota)
 	TapEndBackfill
