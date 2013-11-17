@@ -3,6 +3,7 @@ package memcached
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -128,6 +129,18 @@ func TestMust(t *testing.T) {
 		defer func() { _, errored = recover().(error) }()
 		must(&gomemcached.MCResponse{})
 	}()
+}
+
+func TestFuncHandler(t *testing.T) {
+	ran := false
+	h := FuncHandler(func(io.Writer, *gomemcached.MCRequest) *gomemcached.MCResponse {
+		ran = true
+		return nil
+	})
+	h.HandleMessage(nil, nil)
+	if !ran {
+		t.Fatalf("Didn't run our custom function")
+	}
 }
 
 func BenchmarkReceive(b *testing.B) {
