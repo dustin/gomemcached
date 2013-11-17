@@ -121,6 +121,15 @@ func BenchmarkTransmitResNull(b *testing.B) {
 	}
 }
 
+func TestMust(t *testing.T) {
+	must(nil)
+	errored := false
+	func() {
+		defer func() { _, errored = recover().(error) }()
+		must(&gomemcached.MCResponse{})
+	}()
+}
+
 func BenchmarkReceive(b *testing.B) {
 	res := gomemcached.MCResponse{
 		Opcode: gomemcached.SET,
