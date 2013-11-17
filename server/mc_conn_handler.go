@@ -2,20 +2,10 @@
 package memcached
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/dustin/gomemcached"
 )
-
-// Error returned when a packet doesn't start with proper magic.
-type BadMagic struct {
-	was uint8
-}
-
-func (b BadMagic) Error() string {
-	return fmt.Sprintf("Bad magic:  0x%02x", b.was)
-}
 
 type funcHandler func(io.Writer, *gomemcached.MCRequest) *gomemcached.MCResponse
 
