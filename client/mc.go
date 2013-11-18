@@ -24,9 +24,11 @@ type Client struct {
 	hdrBuf []byte
 }
 
+var dialFun = net.Dial
+
 // Connect to a memcached server.
 func Connect(prot, dest string) (rv *Client, err error) {
-	conn, err := net.Dial(prot, dest)
+	conn, err := dialFun(prot, dest)
 	if err != nil {
 		return nil, err
 	}

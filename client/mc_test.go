@@ -3,12 +3,79 @@ package memcached
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"io/ioutil"
+	"net"
 	"reflect"
 	"testing"
 
 	"github.com/dustin/gomemcached"
 )
+
+func TestConnect(t *testing.T) {
+	defer func() { dialFun = net.Dial }()
+
+	dialFun = func(p, dest string) (net.Conn, error) {
+		if dest == "broken" {
+			return nil, io.ErrNoProgress
+		}
+		return &net.TCPConn{}, nil
+	}
+
+	c, err := Connect("tcp", "broken")
+	if err == nil {
+		t.Errorf("Expected failure, got %v", c)
+	}
+
+	c, err = Connect("tcp", "working")
+	if err != nil {
+		t.Errorf("Expected a connection, got %v", err)
+	}
+}
+
+type tracked bool
+
+func (t *tracked) Close() error {
+	*t = true
+	return nil
+}
+
+func (t tracked) Read([]byte) (int, error) {
+	return 0, io.EOF
+}
+
+func (t tracked) Write([]byte) (int, error) {
+	return 0, io.EOF
+}
+
+func TestClose(t *testing.T) {
+	var tr tracked
+	c, err := Wrap(&tr)
+	must(err)
+	c.Close()
+
+	if !tr {
+		t.Errorf("Expected to close, but didn't")
+	}
+}
+
+func TestHealthy(t *testing.T) {
+	var tr tracked
+	c, err := Wrap(&tr)
+	must(err)
+	if !c.IsHealthy() {
+		t.Errorf("Expected healthy.  Wasn't.")
+	}
+
+	res, err := c.Send(&gomemcached.MCRequest{})
+	if err == nil {
+		t.Errorf("Expected error transmitting, got %v", res)
+	}
+
+	if c.IsHealthy() {
+		t.Errorf("Expected unhealthy.  Wasn't.")
+	}
+}
 
 func TestTransmitReq(t *testing.T) {
 	b := bytes.NewBuffer([]byte{})
