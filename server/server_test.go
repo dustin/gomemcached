@@ -54,6 +54,28 @@ func TestTransmitRes(t *testing.T) {
 	}
 }
 
+type closedrwc struct{}
+
+func (c closedrwc) Close() error {
+	return nil
+}
+
+func (c closedrwc) Write([]byte) (int, error) {
+	return 0, io.EOF
+}
+
+func (c closedrwc) Read([]byte) (int, error) {
+	return 0, io.EOF
+}
+
+func TestHandleIO(t *testing.T) {
+	c := closedrwc{}
+	err := HandleIO(c, nil)
+	if err != io.EOF {
+		t.Errorf("Expected EOF, got %v", err)
+	}
+}
+
 func BenchmarkTransmitRes(b *testing.B) {
 	bout := &bytes.Buffer{}
 
