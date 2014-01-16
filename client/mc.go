@@ -194,7 +194,6 @@ func (c *Client) Append(vb uint16, key string, data []byte) (*gomemcached.MCResp
 
 // GetBulk gets keys in bulk
 func (c *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCResponse, error) {
-	terminalOpaque := uint32(len(keys) + 5)
 	rv := map[string]*gomemcached.MCResponse{}
 	going := true
 
@@ -212,10 +211,11 @@ func (c *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCRe
 				errch <- err
 				return
 			}
-			if res.Opaque == terminalOpaque {
-				return
-			}
-			if res.Opcode != gomemcached.GETQ {
+			switch res.Opcode {
+			case gomemcached.GET:
+				going = false
+			case gomemcached.GETQ:
+			default:
 				log.Panicf("Unexpected opcode in GETQ response: %+v",
 					res)
 			}
@@ -224,8 +224,12 @@ func (c *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCRe
 	}()
 
 	for i, k := range keys {
+		op := gomemcached.GETQ
+		if i == len(keys)-1 {
+			op = gomemcached.GET
+		}
 		err := c.Transmit(&gomemcached.MCRequest{
-			Opcode:  gomemcached.GETQ,
+			Opcode:  op,
 			VBucket: vb,
 			Key:     []byte(k),
 			Opaque:  uint32(i),
@@ -233,13 +237,6 @@ func (c *Client) GetBulk(vb uint16, keys []string) (map[string]*gomemcached.MCRe
 		if err != nil {
 			return rv, err
 		}
-	}
-
-	err := c.Transmit(&gomemcached.MCRequest{
-		Opcode: gomemcached.NOOP,
-		Opaque: terminalOpaque})
-	if err != nil {
-		return rv, err
 	}
 
 	return rv, <-errch
