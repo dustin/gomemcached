@@ -24,7 +24,7 @@ func TestTransmitRes(t *testing.T) {
 		Body:   []byte("somevalue"),
 	}
 
-	err := transmitResponse(buf, &res)
+	_, err := transmitResponse(buf, &res)
 	if err != nil {
 		t.Fatalf("Error transmitting request: %v", err)
 	}
@@ -93,7 +93,7 @@ func BenchmarkTransmitRes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		bout.Reset()
 		buf := bufio.NewWriterSize(bout, res.Size()*2)
-		err := transmitResponse(buf, &res)
+		_, err := transmitResponse(buf, &res)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
 		}
@@ -117,7 +117,7 @@ func BenchmarkTransmitResLarge(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		bout.Reset()
 		buf := bufio.NewWriterSize(bout, res.Size()*2)
-		err := transmitResponse(buf, &res)
+		_, err := transmitResponse(buf, &res)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
 		}
@@ -137,7 +137,7 @@ func BenchmarkTransmitResNull(b *testing.B) {
 	b.SetBytes(int64(res.Size()))
 
 	for i := 0; i < b.N; i++ {
-		err := transmitResponse(ioutil.Discard, &res)
+		_, err := transmitResponse(ioutil.Discard, &res)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
 		}

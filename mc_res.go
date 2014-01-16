@@ -129,33 +129,35 @@ func (res *MCResponse) Bytes() []byte {
 }
 
 // Send this response message across a writer.
-func (res *MCResponse) Transmit(w io.Writer) (err error) {
+func (res *MCResponse) Transmit(w io.Writer) (n int, err error) {
 	if len(res.Body) < 128 {
-		_, err = w.Write(res.Bytes())
+		n, err = w.Write(res.Bytes())
 	} else {
-		_, err = w.Write(res.HeaderBytes())
+		n, err = w.Write(res.HeaderBytes())
 		if err == nil {
-			_, err = w.Write(res.Body)
+			m := 0
+			m, err = w.Write(res.Body)
+			m += n
 		}
 	}
 	return
 }
 
 // Fill this MCResponse with the data from this reader.
-func (req *MCResponse) Receive(r io.Reader, hdrBytes []byte) error {
+func (req *MCResponse) Receive(r io.Reader, hdrBytes []byte) (int, error) {
 	if len(hdrBytes) < HDR_LEN {
 		hdrBytes = []byte{
 			0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0}
 	}
-	_, err := io.ReadFull(r, hdrBytes)
+	n, err := io.ReadFull(r, hdrBytes)
 	if err != nil {
-		return err
+		return n, err
 	}
 
 	if hdrBytes[0] != RES_MAGIC && hdrBytes[0] != REQ_MAGIC {
-		return fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
+		return n, fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
 	}
 
 	klen := int(binary.BigEndian.Uint16(hdrBytes[2:4]))
@@ -169,12 +171,12 @@ func (req *MCResponse) Receive(r io.Reader, hdrBytes []byte) error {
 	bodyLen := int(binary.BigEndian.Uint32(hdrBytes[8:12])) - (klen + elen)
 
 	buf := make([]byte, klen+elen+bodyLen)
-	_, err = io.ReadFull(r, buf)
+	m, err := io.ReadFull(r, buf)
 	if err == nil {
 		req.Extras = buf[0:elen]
 		req.Key = buf[elen : klen+elen]
 		req.Body = buf[klen+elen:]
 	}
 
-	return err
+	return n + m, err
 }

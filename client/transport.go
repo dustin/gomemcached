@@ -23,23 +23,23 @@ func UnwrapMemcachedError(rv *gomemcached.MCResponse,
 	return rv, err
 }
 
-func getResponse(s io.Reader, hdrBytes []byte) (rv *gomemcached.MCResponse, err error) {
+func getResponse(s io.Reader, hdrBytes []byte) (rv *gomemcached.MCResponse, n int, err error) {
 	if s == nil {
-		return nil, errNoConn
+		return nil, 0, errNoConn
 	}
 
 	rv = &gomemcached.MCResponse{}
-	err = rv.Receive(s, hdrBytes)
+	n, err = rv.Receive(s, hdrBytes)
 
 	if err == nil && rv.Status != gomemcached.SUCCESS {
 		err = rv
 	}
-	return rv, err
+	return rv, n, err
 }
 
-func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (err error) {
+func transmitRequest(o io.Writer, req *gomemcached.MCRequest) (int, error) {
 	if o == nil {
-		return errNoConn
+		return 0, errNoConn
 	}
 	return req.Transmit(o)
 }

@@ -63,7 +63,7 @@ func HandleMessage(r io.Reader, w io.Writer, handler RequestHandler) error {
 	if !res.Fatal {
 		res.Opcode = req.Opcode
 		res.Opaque = req.Opaque
-		err = res.Transmit(w)
+		_, err = res.Transmit(w)
 		if err != nil {
 			return err
 		}
@@ -74,10 +74,10 @@ func HandleMessage(r io.Reader, w io.Writer, handler RequestHandler) error {
 }
 
 func ReadPacket(r io.Reader) (rv gomemcached.MCRequest, err error) {
-	err = rv.Receive(r, nil)
+	_, err = rv.Receive(r, nil)
 	return
 }
 
-func transmitResponse(o io.Writer, res *gomemcached.MCResponse) (err error) {
+func transmitResponse(o io.Writer, res *gomemcached.MCResponse) (int, error) {
 	return res.Transmit(o)
 }

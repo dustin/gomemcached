@@ -92,12 +92,12 @@ func TestTransmitReq(t *testing.T) {
 	}
 
 	// Verify nil transmit is OK
-	err := transmitRequest(nil, &req)
+	_, err := transmitRequest(nil, &req)
 	if err != errNoConn {
 		t.Errorf("Expected errNoConn with no conn, got %v", err)
 	}
 
-	err = transmitRequest(buf, &req)
+	_, err = transmitRequest(buf, &req)
 	if err != nil {
 		t.Fatalf("Error transmitting request: %v", err)
 	}
@@ -145,7 +145,7 @@ func BenchmarkTransmitReq(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		bout.Reset()
 		buf := bufio.NewWriterSize(bout, req.Size()*2)
-		err := transmitRequest(buf, &req)
+		_, err := transmitRequest(buf, &req)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
 		}
@@ -170,7 +170,7 @@ func BenchmarkTransmitReqLarge(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		bout.Reset()
 		buf := bufio.NewWriterSize(bout, req.Size()*2)
-		err := transmitRequest(buf, &req)
+		_, err := transmitRequest(buf, &req)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
 		}
@@ -191,7 +191,7 @@ func BenchmarkTransmitReqNull(b *testing.B) {
 	b.SetBytes(int64(req.Size()))
 
 	for i := 0; i < b.N; i++ {
-		err := transmitRequest(ioutil.Discard, &req)
+		_, err := transmitRequest(ioutil.Discard, &req)
 		if err != nil {
 			b.Fatalf("Error transmitting request: %v", err)
 		}
@@ -251,7 +251,7 @@ func TestDecodeSpecSample(t *testing.T) {
 	}
 
 	buf := make([]byte, gomemcached.HDR_LEN)
-	res, err := getResponse(bytes.NewReader(data), buf)
+	res, _, err := getResponse(bytes.NewReader(data), buf)
 	if err != nil {
 		t.Fatalf("Error parsing response: %v", err)
 	}
@@ -274,7 +274,7 @@ func TestDecodeSpecSample(t *testing.T) {
 }
 
 func TestNilReader(t *testing.T) {
-	res, err := getResponse(nil, nil)
+	res, _, err := getResponse(nil, nil)
 	if err != errNoConn {
 		t.Fatalf("Expected error reading from nil, got %#v", res)
 	}
@@ -294,7 +294,8 @@ func TestDecode(t *testing.T) {
 		's', 'o', 'm', 'e', 'v', 'a', 'l', 'u', 'e'}
 
 	buf := make([]byte, gomemcached.HDR_LEN)
-	res, err := UnwrapMemcachedError(getResponse(bytes.NewReader(data), buf))
+	res, _, err := getResponse(bytes.NewReader(data), buf)
+	res, err = UnwrapMemcachedError(res, err)
 	if err != nil {
 		t.Fatalf("Error parsing response: %v", err)
 	}

@@ -264,7 +264,7 @@ loop:
 		//  (Can't call mc.Receive() because it reads a
 		//  _response_ not a request.)
 		var pkt gomemcached.MCRequest
-		err := pkt.Receive(mc.conn, headerBuf[:])
+		_, err := pkt.Receive(mc.conn, headerBuf[:])
 
 		if err != nil {
 			if err != io.EOF {
@@ -298,7 +298,7 @@ loop:
 		if len(pkt.Extras) >= 4 {
 			reqFlags := binary.BigEndian.Uint16(pkt.Extras[2:])
 			if reqFlags&gomemcached.TAP_ACK != 0 {
-				if err := mc.sendAck(&pkt); err != nil {
+				if _, err := mc.sendAck(&pkt); err != nil {
 					feed.Error = err
 					break loop
 				}
@@ -310,7 +310,7 @@ loop:
 	}
 }
 
-func (mc *Client) sendAck(pkt *gomemcached.MCRequest) error {
+func (mc *Client) sendAck(pkt *gomemcached.MCRequest) (int, error) {
 	res := gomemcached.MCResponse{
 		Opcode: pkt.Opcode,
 		Opaque: pkt.Opaque,

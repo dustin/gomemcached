@@ -60,19 +60,19 @@ func (c Client) IsHealthy() bool {
 
 // Send a custom request and get the response.
 func (c *Client) Send(req *gomemcached.MCRequest) (rv *gomemcached.MCResponse, err error) {
-	err = transmitRequest(c.conn, req)
+	_, err = transmitRequest(c.conn, req)
 	if err != nil {
 		c.healthy = false
 		return
 	}
-	resp, err := getResponse(c.conn, c.hdrBuf)
+	resp, _, err := getResponse(c.conn, c.hdrBuf)
 	c.healthy = !gomemcached.IsFatal(err)
 	return resp, err
 }
 
 // Transmit send a request, but does not wait for a response.
 func (c *Client) Transmit(req *gomemcached.MCRequest) error {
-	err := transmitRequest(c.conn, req)
+	_, err := transmitRequest(c.conn, req)
 	if err != nil {
 		c.healthy = false
 	}
@@ -81,7 +81,7 @@ func (c *Client) Transmit(req *gomemcached.MCRequest) error {
 
 // Receive a response
 func (c *Client) Receive() (*gomemcached.MCResponse, error) {
-	resp, err := getResponse(c.conn, c.hdrBuf)
+	resp, _, err := getResponse(c.conn, c.hdrBuf)
 	if err != nil {
 		c.healthy = false
 	}
@@ -463,13 +463,13 @@ func (c *Client) Stats(key string) ([]StatValue, error) {
 		Opaque: 918494,
 	}
 
-	err := transmitRequest(c.conn, req)
+	_, err := transmitRequest(c.conn, req)
 	if err != nil {
 		return rv, err
 	}
 
 	for {
-		res, err := getResponse(c.conn, c.hdrBuf)
+		res, _, err := getResponse(c.conn, c.hdrBuf)
 		if err != nil {
 			return rv, err
 		}

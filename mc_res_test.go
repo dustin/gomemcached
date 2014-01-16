@@ -208,13 +208,13 @@ func TestIsFatal(t *testing.T) {
 
 func TestResponseTransmit(t *testing.T) {
 	res := MCResponse{Key: []byte("thekey")}
-	err := res.Transmit(ioutil.Discard)
+	_, err := res.Transmit(ioutil.Discard)
 	if err != nil {
 		t.Errorf("Error sending small response: %v", err)
 	}
 
 	res.Body = make([]byte, 256)
-	err = res.Transmit(ioutil.Discard)
+	_, err = res.Transmit(ioutil.Discard)
 	if err != nil {
 		t.Errorf("Error sending large response thing: %v", err)
 	}
@@ -234,7 +234,7 @@ func TestReceiveResponse(t *testing.T) {
 	data := res.Bytes()
 
 	res2 := MCResponse{}
-	err := res2.Receive(bytes.NewReader(data), nil)
+	_, err := res2.Receive(bytes.NewReader(data), nil)
 	if err != nil {
 		t.Fatalf("Error receiving: %v", err)
 	}
@@ -258,7 +258,7 @@ func TestReceiveResponseBadMagic(t *testing.T) {
 	data[0] = 0x13
 
 	res2 := MCResponse{}
-	err := res2.Receive(bytes.NewReader(data), nil)
+	_, err := res2.Receive(bytes.NewReader(data), nil)
 	if err == nil {
 		t.Fatalf("Expected error, got: %#v", res2)
 	}
@@ -278,7 +278,7 @@ func TestReceiveResponseShortHeader(t *testing.T) {
 	data[0] = 0x13
 
 	res2 := MCResponse{}
-	err := res2.Receive(bytes.NewReader(data[:13]), nil)
+	_, err := res2.Receive(bytes.NewReader(data[:13]), nil)
 	if err == nil {
 		t.Fatalf("Expected error, got: %#v", res2)
 	}
@@ -298,7 +298,7 @@ func TestReceiveResponseShortBody(t *testing.T) {
 	data[0] = 0x13
 
 	res2 := MCResponse{}
-	err := res2.Receive(bytes.NewReader(data[:len(data)-3]), nil)
+	_, err := res2.Receive(bytes.NewReader(data[:len(data)-3]), nil)
 	if err == nil {
 		t.Fatalf("Expected error, got: %#v", res2)
 	}
@@ -318,7 +318,7 @@ func TestReceiveResponseWithBuffer(t *testing.T) {
 
 	res2 := MCResponse{}
 	buf := make([]byte, HDR_LEN)
-	err := res2.Receive(bytes.NewReader(data), buf)
+	_, err := res2.Receive(bytes.NewReader(data), buf)
 	if err != nil {
 		t.Fatalf("Error receiving: %v", err)
 	}
@@ -338,7 +338,7 @@ func TestReceiveResponseNoContent(t *testing.T) {
 	data := res.Bytes()
 
 	res2 := MCResponse{}
-	err := res2.Receive(bytes.NewReader(data), nil)
+	_, err := res2.Receive(bytes.NewReader(data), nil)
 	if err != nil {
 		t.Fatalf("Error receiving: %v", err)
 	}

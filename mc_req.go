@@ -104,33 +104,35 @@ func (req *MCRequest) Bytes() []byte {
 }
 
 // Send this request message across a writer.
-func (req *MCRequest) Transmit(w io.Writer) (err error) {
+func (req *MCRequest) Transmit(w io.Writer) (n int, err error) {
 	if len(req.Body) < 128 {
-		_, err = w.Write(req.Bytes())
+		n, err = w.Write(req.Bytes())
 	} else {
-		_, err = w.Write(req.HeaderBytes())
+		n, err = w.Write(req.HeaderBytes())
 		if err == nil {
-			_, err = w.Write(req.Body)
+			m := 0
+			m, err = w.Write(req.Body)
+			n += m
 		}
 	}
 	return
 }
 
 // Fill this MCRequest with the data from this reader.
-func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) error {
+func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) (int, error) {
 	if len(hdrBytes) < HDR_LEN {
 		hdrBytes = []byte{
 			0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0}
 	}
-	_, err := io.ReadFull(r, hdrBytes)
+	n, err := io.ReadFull(r, hdrBytes)
 	if err != nil {
-		return err
+		return n, err
 	}
 
 	if hdrBytes[0] != RES_MAGIC && hdrBytes[0] != REQ_MAGIC {
-		return fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
+		return n, fmt.Errorf("Bad magic: 0x%02x", hdrBytes[0])
 	}
 
 	klen := int(binary.BigEndian.Uint16(hdrBytes[2:]))
@@ -142,14 +144,15 @@ func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) error {
 	bodyLen := int(binary.BigEndian.Uint32(hdrBytes[8:]) -
 		uint32(klen) - uint32(elen))
 	if bodyLen > MaxBodyLen {
-		return fmt.Errorf("%d is too big (max %d)",
+		return n, fmt.Errorf("%d is too big (max %d)",
 			bodyLen, MaxBodyLen)
 	}
 	req.Opaque = binary.BigEndian.Uint32(hdrBytes[12:])
 	req.Cas = binary.BigEndian.Uint64(hdrBytes[16:])
 
 	buf := make([]byte, klen+elen+bodyLen)
-	_, err = io.ReadFull(r, buf)
+	m, err := io.ReadFull(r, buf)
+	n += m
 	if err == nil {
 		if req.Opcode >= TAP_MUTATION &&
 			req.Opcode <= TAP_CHECKPOINT_END &&
@@ -164,5 +167,5 @@ func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) error {
 		req.Body = buf[klen+elen:]
 	}
 
-	return err
+	return n, err
 }
