@@ -252,6 +252,9 @@ func (mc *Client) StartTapFeed(args TapArguments) (*TapFeed, error) {
 	return feed, nil
 }
 
+// TapRecvHook is called after every incoming tap packet is received.
+var TapRecvHook func(*gomemcached.MCRequest, int, error)
+
 // Internal goroutine that reads from the socket and writes events to
 // the channel
 func (mc *Client) runFeed(ch chan TapEvent, feed *TapFeed) {
@@ -264,7 +267,10 @@ loop:
 		//  (Can't call mc.Receive() because it reads a
 		//  _response_ not a request.)
 		var pkt gomemcached.MCRequest
-		_, err := pkt.Receive(mc.conn, headerBuf[:])
+		n, err := pkt.Receive(mc.conn, headerBuf[:])
+		if TapRecvHook != nil {
+			TapRecvHook(&pkt, n, err)
+		}
 
 		if err != nil {
 			if err != io.EOF {
