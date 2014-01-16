@@ -1,8 +1,6 @@
-/*
- * Package mcdebug provides memcached client op statistics via expvar.
- *
- * Usage:   import _ "github.com/dustin/gomemcached/debug"
- */
+// Package mcdebug provides memcached client op statistics via expvar.
+//
+// Usage:   import _ "github.com/dustin/gomemcached/debug"
 package mcdebug
 
 import (
