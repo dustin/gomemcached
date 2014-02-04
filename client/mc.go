@@ -497,7 +497,12 @@ func (c *Client) StatsMap(key string) (map[string]string, error) {
 	return rv, nil
 }
 
-// return underlying connection back to the caller.
-func (c *Client) GetConnection() io.ReadWriteCloser {
+// Hijack exposes the underlying connection from this client.
+//
+// It also marks the connection as unhealthy since the client will
+// have lost control over the connection and can't otherwise verify
+// things are in good shape for connection pools.
+func (c *Client) Hijack() io.ReadWriteCloser {
+	c.healthy = false
 	return c.conn
 }
