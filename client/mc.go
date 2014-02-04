@@ -496,3 +496,8 @@ func (c *Client) StatsMap(key string) (map[string]string, error) {
 	}
 	return rv, nil
 }
+
+// return underlying connection back to the caller.
+func (c *Client) GetConnection() io.ReadWriteCloser {
+	return c.conn
+}
