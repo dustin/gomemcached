@@ -97,6 +97,19 @@ func (c *Client) Get(vb uint16, key string) (*gomemcached.MCResponse, error) {
 	})
 }
 
+// Touch touches a key.
+func (c *Client) Touch(vb uint16, key string, exp int) (*gomemcached.MCResponse, error) {
+	req := &gomemcached.MCRequest{
+		Opcode:  gomemcached.TOUCH,
+		VBucket: vb,
+		Key:     []byte(key),
+		Extras:  []byte{0, 0, 0, 0, 0, 0, 0, 0},
+	}
+
+	binary.BigEndian.PutUint64(req.Extras, uint64(flags)<<32|uint64(exp))
+	return c.Send(req)
+}
+
 // Del deletes a key.
 func (c *Client) Del(vb uint16, key string) (*gomemcached.MCResponse, error) {
 	return c.Send(&gomemcached.MCRequest{
