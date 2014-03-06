@@ -450,7 +450,7 @@ type StatValue struct {
 
 // Stats requests server-side stats.
 //
-// use "" as the stat key for toplevel stats.
+// Use "" as the stat key for toplevel stats.
 func (c *Client) Stats(key string) ([]StatValue, error) {
 	rv := make([]StatValue, 0, 128)
 
@@ -485,6 +485,8 @@ func (c *Client) Stats(key string) ([]StatValue, error) {
 
 // StatsMap requests server-side stats similarly to Stats, but returns
 // them as a map.
+//
+// Use "" as the stat key for toplevel stats.
 func (c *Client) StatsMap(key string) (map[string]string, error) {
 	rv := make(map[string]string)
 	st, err := c.Stats(key)
