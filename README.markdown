@@ -28,5 +28,5 @@ are specific areas I know need work).  This is just my attempt to
 learn the language somewhat.
 
 [go]: http://golang.org/
-[gocache]: gomemcached/blob/master/gocache/gocache.go
-[storage]: gomemcached/blob/master/gocache/mc_storage.go
+[gocache]: ../master/gocache/gocache.go
+[storage]: ../master/gocache/mc_storage.go
