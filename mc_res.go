@@ -173,9 +173,15 @@ func (req *MCResponse) Receive(r io.Reader, hdrBytes []byte) (int, error) {
 	buf := make([]byte, klen+elen+bodyLen)
 	m, err := io.ReadFull(r, buf)
 	if err == nil {
-		req.Extras = buf[0:elen]
-		req.Key = buf[elen : klen+elen]
-		req.Body = buf[klen+elen:]
+		if elen > 0 {
+			req.Extras = buf[0:elen]
+		}
+		if klen > 0 {
+			req.Key = buf[elen : klen+elen]
+		}
+		if klen+elen > 0 {
+			req.Body = buf[klen+elen:]
+		}
 	}
 
 	return n + m, err

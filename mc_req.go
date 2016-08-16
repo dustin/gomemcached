@@ -162,9 +162,15 @@ func (req *MCRequest) Receive(r io.Reader, hdrBytes []byte) (int, error) {
 			// bytes of extra data give its length.
 			elen += int(binary.BigEndian.Uint16(buf))
 		}
-		req.Extras = buf[0:elen]
-		req.Key = buf[elen : klen+elen]
-		req.Body = buf[klen+elen:]
+		if elen > 0 {
+			req.Extras = buf[0:elen]
+		}
+		if klen > 0 {
+			req.Key = buf[elen : klen+elen]
+		}
+		if klen+elen > 0 {
+			req.Body = buf[klen+elen:]
+		}
 	}
 
 	return n, err
