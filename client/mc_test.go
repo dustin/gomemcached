@@ -262,7 +262,6 @@ func TestDecodeSpecSample(t *testing.T) {
 		Opaque: 0,
 		Cas:    1,
 		Extras: []byte{0xde, 0xad, 0xbe, 0xef},
-		Key:    []byte{},
 		Body:   []byte("World"),
 		Fatal:  false,
 	}
@@ -305,7 +304,6 @@ func TestDecode(t *testing.T) {
 		Status: 1582,
 		Opaque: 7242,
 		Cas:    938424885,
-		Extras: []byte{},
 		Key:    []byte("somekey"),
 		Body:   []byte("somevalue"),
 		Fatal:  false,
