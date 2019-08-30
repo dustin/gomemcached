@@ -179,7 +179,7 @@ func (req *MCResponse) Receive(r io.Reader, hdrBytes []byte) (int, error) {
 		if klen > 0 {
 			req.Key = buf[elen : klen+elen]
 		}
-		if klen+elen > 0 {
+		if bodyLen > 0 {
 			req.Body = buf[klen+elen:]
 		}
 	}
